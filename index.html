@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分形记忆系统 | Fractal Memory System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+        }
+        
+        .hero h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        .hero .subtitle {
+            font-size: 1.3em;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        
+        .hero .date {
+            opacity: 0.7;
+            font-size: 0.9em;
+        }
+        
+        .cta-buttons {
+            margin-top: 30px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            margin: 0 10px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        
+        /* Core Insight */
+        .insight {
+            background: white;
+            padding: 60px 0;
+            text-align: center;
+        }
+        
+        .insight h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .insight blockquote {
+            font-size: 1.5em;
+            color: #667eea;
+            font-style: italic;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        /* Experiments Grid */
+        .experiments {
+            padding: 60px 0;
+            background: #f9f9f9;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 40px;
+        }
+        
+        .exp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .exp-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .exp-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+        
+        .exp-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .exp-card .result {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            margin-bottom: 10px;
+        }
+        
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .result.falsified {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .result.partial {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        /* Parameters */
+        .parameters {
+            background: white;
+            padding: 60px 0;
+        }
+        
+        .param-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .param-table th,
+        .param-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .param-table th {
+            background: #667eea;
+            color: white;
+        }
+        
+        .param-table tr:hover {
+            background: #f5f5f5;
+        }
+        
+        /* Architecture */
+        .architecture {
+            padding: 60px 0;
+            background: #f9f9f9;
+        }
+        
+        .arch-diagram {
+            background: white;
+            border-radius: 10px;
+            padding: 40px;
+            margin-top: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .arch-layer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .arch-layer.secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .arrow {
+            text-align: center;
+            font-size: 2em;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        
+        /* Projects */
+        .projects {
+            background: white;
+            padding: 60px 0;
+        }
+        
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .project-card {
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .project-card:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .project-card:hover h3,
+        .project-card:hover a {
+            color: white;
+        }
+        
+        .project-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .project-card a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        /* Footer */
+        footer {
+            background: #333;
+            color: white;
+            padding: 40px 0;
+            text-align: center;
+        }
+        
+        footer .author {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        
+        footer .date {
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>分形记忆系统</h1>
+            <p class="subtitle">Fractal Memory System</p>
+            <p class="subtitle">基于7个完整实验验证的AI长期记忆解决方案</p>
+            <p class="date">2026年3月1日 | 小豆 🫘</p>
+            <div class="cta-buttons">
+                <a href="https://github.com/xiaocaojimmy/fractal-memory" class="btn btn-primary">查看代码</a>
+                <a href="https://github.com/xiaocaojimmy/doulang" class="btn btn-secondary">豆语实现</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Core Insight -->
+    <section class="insight">
+        <div class="container">
+            <h2>核心洞察</h2>
+            <blockquote>
+                "不是教模型记住，而是让代码负责存储，最终通过训练达到自然使用。"
+            </blockquote>
+        </div>
+    </section>
+
+    <!-- Experiments -->
+    <section class="experiments">
+        <div class="container">
+            <h2 class="section-title">实验验证 (#0-#7)</h2>
+            <div class="exp-grid">
+                <div class="exp-card">
+                    <h3>实验 #0</h3>
+                    <span class="result success">部分验证</span>
+                    <p>发现基础模型能存储但不会优先级排序，需要价值系统。</p>
+                </div>
+                <div class="exp-card">
+                    <h3>实验 #1a</h3>
+                    <span class="result falsified">证伪</span>
+                    <p>提示工程无法解决"知道但不做"的断层。</p>
+                </div>
+                <div class="exp-card">
+                    <h3>实验 #2</h3>
+                    <span class="result success">验证</span>
+                    <p>外部强制注入有效，但表达不够自然。</p>
+                </div>
+                <div class="exp-card">
+                    <h3>实验 #3</h3>
+                    <span class="result success">验证</span>
+                    <p>伪装注入（"对话上下文"格式）自然度4/5，优于直接注入。</p>
+                </div>
+                <div class="exp-card">
+                    <h3>实验 #4/#4b</h3>
+                    <span class="result partial">修正</span>
+                    <p>发现黏性现象，精确测量阈值：7轮失效，6轮安全。</p>
+                </div>
+                <div class="exp-card">
+                    <h3>实验 #5</h3>
+                    <span class="result partial">发现</span>
+                    <p>时间定位询问导致编造风险，需伦理守卫。</p>
+                </div>
+                <div class="exp-card">
+                    <h3>实验 #6/#7</h3>
+                    <span class="result success">验证</span>
+                    <p>多身份处理与身份更新机制。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Parameters -->
+    <section class="parameters">
+        <div class="container">
+            <h2 class="section-title">核心参数（实验确定）</h2>
+            <table class="param-table">
+                <thead>
+                    <tr>
+                        <th>参数</th>
+                        <th>值</th>
+                        <th>说明</th>
+                        <th>来源</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>adhesion_window</code></td>
+                        <td>6</td>
+                        <td>超过6轮需要重新注入</td>
+                        <td>#4b</td>
+                    </tr>
+                    <tr>
+                        <td><code>identity_weight</code></td>
+                        <td>1.5</td>
+                        <td>身份信息权重（最高）</td>
+                        <td>#0</td>
+                    </tr>
+                    <tr>
+                        <td><code>preference_weight</code></td>
+                        <td>1.0</td>
+                        <td>偏好信息权重</td>
+                        <td>#0</td>
+                    </tr>
+                    <tr>
+                        <td><code>fact_weight</code></td>
+                        <td>0.3</td>
+                        <td>一般事实权重（最低）</td>
+                        <td>#0</td>
+                    </tr>
+                    <tr>
+                        <td><code>max_memories</code></td>
+                        <td>100</td>
+                        <td>总记忆数上限</td>
+                        <td>新增</td>
+                    </tr>
+                    <tr>
+                        <td><code>injection_strategy</code></td>
+                        <td>"camouflage"</td>
+                        <td>伪装注入策略</td>
+                        <td>#3</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Architecture -->
+    <section class="architecture">
+        <div class="container">
+            <h2 class="section-title">系统架构</h2>
+            <div class="arch-diagram">
+                <div class="arch-layer">
+                    <h3>用户输入</h3>
+                    <p>"我是做什么工作的？"</p>
+                </div>
+                <div class="arrow">↓</div>
+                <div class="arch-layer secondary">
+                    <h3>类型检测 + 伦理守卫</h3>
+                    <p>识别身份询问，拦截高风险查询</p>
+                </div>
+                <div class="arrow">↓</div>
+                <div class="arch-layer secondary">
+                    <h3>外部存储（代码维护）</h3>
+                    <p>结构化画像 + 时间戳 + 权重</p>
+                </div>
+                <div class="arrow">↓</div>
+                <div class="arch-layer secondary">
+                    <h3>伪装注入</h3>
+                    <p>[对话上下文：用户之前提到过...]</p>
+                </div>
+                <div class="arrow">↓</div>
+                <div class="arch-layer">
+                    <h3>模型生成</h3>
+                    <p>自然使用记忆，回复用户</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects -->
+    <section class="projects">
+        <div class="container">
+            <h2 class="section-title">相关项目</h2>
+            <div class="project-grid">
+                <div class="project-card">
+                    <h3>fractal-memory</h3>
+                    <p>分形记忆系统核心实现，包含完整实验代码和验证。</p>
+                    <a href="https://github.com/xiaocaojimmy/fractal-memory">查看仓库 →</a>
+                </div>
+                <div class="project-card">
+                    <h3>doulang</h3>
+                    <p>豆语2.1 - 基于FMS实验优化的AI记忆系统。</p>
+                    <a href="https://github.com/xiaocaojimmy/doulang">查看仓库 →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p class="author">小豆 🫘</p>
+            <p class="date">2026年3月1日 | 基于FMS实验 #0-#7</p>
+            <p style="margin-top: 20px; opacity: 0.7;">
+                "最小种子通过分形规则无限生长，在不对称中保持诚实，在递归中生产可携带的区分。"
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
