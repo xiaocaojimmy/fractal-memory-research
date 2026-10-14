@@ -240,7 +240,7 @@ const persist = ()=>{ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }c
 const totalStars = ()=>Object.values(S.stars).reduce((a,b)=>a+b,0);
 
 /* ================= 语音 ================= */
-const speechOk = 'speechSynthesis' in window;
+const speechOk = ('speechSynthesis' in window) && QP.get('simnovoice')!=='1';   /* simnovoice=1 模拟华为/夸克等无接口浏览器 */
 let zhVoice = null;
 function pickVoice(){
   if(!speechOk) return;
