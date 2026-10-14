@@ -255,7 +255,7 @@ if(speechOk){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 let voiceEverStarted = false;
 function hideVoiceTip(){ const t=document.getElementById('noVoiceTip'); if(t) t.remove(); }
 function voiceCheckTip(){
-  if(!S.settings.voice || voiceEverStarted) return;
+  if(!S.settings.voice || !speechOk || voiceEverStarted) return;
   let vs=[]; try{ vs = speechOk ? speechSynthesis.getVoices() : []; }catch(e){}
   if(zhVoice || vs.length) return;
   if(document.getElementById('noVoiceTip')) return;
@@ -277,14 +277,31 @@ function drainVoiceIdle(){
 /* 语音全部念完后回调（引擎不回调时靠调用方自己的看门狗） */
 function onVoiceIdle(fn){ if(!voiceBusy && !voiceQ.length){ fn(); return; } voiceIdleFns.push(fn); }
 function say(txt){
-  if(!S.settings.voice || !speechOk || !txt) return;
+  if(!S.settings.voice || !txt) return;
   voiceQ.push(txt); pumpVoice();
 }
+/* 无 speechSynthesis 接口的浏览器（华为/夸克/百度）自动放内置语音短音频包 */
+function fnv36(s){
+  let h=2166136261>>>0;
+  for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619)>>>0; }
+  let out=''; do{ out=(h%36).toString(36)+out; h=Math.floor(h/36); }while(h);
+  return out;
+}
+let curClip=null;
 function pumpVoice(){
   if(voiceBusy || !voiceQ.length) return;
-  /* 部分国产内核（含华为浏览器）cancel 后紧跟的 speak 会被静默吞掉，错开 80ms */
-  if(Date.now()-lastCancel<80){ setTimeout(pumpVoice,80); return; }
   const txt = voiceQ.shift();
+  if(!speechOk){
+    /* 内置语音包模式：audio/<句子哈希>.mp3（gen_clips.py 用 edge-tts 小晓合成） */
+    voiceBusy = true;
+    const a = new Audio('audio/'+fnv36(txt)+'.mp3'); curClip = a;
+    const fin = ()=>{ if(curClip!==a) return; curClip=null; voiceBusy=false; pumpVoice(); drainVoiceIdle(); };
+    a.onended = fin; a.onerror = fin;
+    a.play().catch(fin);
+    return;
+  }
+  /* 部分国产内核（含华为浏览器）cancel 后紧跟的 speak 会被静默吞掉，错开 80ms */
+  if(Date.now()-lastCancel<80){ voiceQ.unshift(txt); setTimeout(pumpVoice,80); return; }
   try{
     const u = new SpeechSynthesisUtterance(txt);
     u.lang='zh-CN'; u.rate=S.settings.rate||1.6; u.pitch=1.35;
@@ -295,7 +312,7 @@ function pumpVoice(){
     speechSynthesis.speak(u);
   }catch(e){ voiceBusy=false; drainVoiceIdle(); }
 }
-function cancelSpeech(){ voiceQ.length=0; voiceBusy=false; lastCancel=Date.now(); try{ speechSynthesis.cancel(); }catch(e){} drainVoiceIdle(); }
+function cancelSpeech(){ voiceQ.length=0; voiceBusy=false; if(curClip){ const c=curClip; curClip=null; try{ c.pause(); }catch(e){} } lastCancel=Date.now(); try{ speechSynthesis.cancel(); }catch(e){} drainVoiceIdle(); }
 let lastCancel = 0;
 /* Chromium 长语音 15 秒自动暂停 bug 的保活 */
 setInterval(()=>{ try{ if(speechOk && speechSynthesis.speaking && !speechSynthesis.paused) speechSynthesis.resume(); }catch(e){} }, 9000);
@@ -896,7 +913,7 @@ const Learn = {
   right(){
     this.busy=true;
     sfxRight();
-    say(pick(PRAISE)+' '+exprSpeak(this.p));   /* 夸奖之后把算式讲一遍：1加1等于2，一共2个小朋友 */
+    say(pick(PRAISE)); say(exprSpeak(this.p));   /* 夸奖+算式各一条，语音包按单句出账 */
     if(this.first){ this.got++; $('learnStars').textContent=this.got; starFly($('stage'),$('learnPill')); }
     confetti(70);
     /* 等"夸完+算式念完"整段语音真正结束再切题；14 秒看门狗防语音引擎不回调（冒烟 2.6 秒） */
