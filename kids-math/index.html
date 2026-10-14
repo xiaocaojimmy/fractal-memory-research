@@ -291,7 +291,7 @@ let curClip=null;
 /* 语音包播放：fetch+decodeAudioData+BufferSource（WebAudio 通道），失败退 audio 标签 */
 const clipBuf = {};
 function playClip(txt, fin){
-  const url = 'audio/'+fnv36(txt)+'.mp3';
+  const url = 'audio2/'+fnv36(txt)+'.wav';   /* WAV=零解码依赖：华为/夸克等内核阉了 mp3 解码器（l8n1kw 探针实证后切换） */
   const play = (buf)=>{
     const ctx = ac();
     if(!ctx){ audioFallback(url, fin); return; }
