@@ -250,17 +250,23 @@ function pickVoice(){
   if(zhVoice){ const t=document.getElementById('noVoiceTip'); if(t) t.remove(); }
 }
 if(speechOk){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
-/* 手机/微信浏览器可能没有语音引擎：只有效果音没旁白时，给用户一句话说明 */
-setTimeout(()=>{
-  if(!S.settings.voice) return;
+/* 语音列表在华为等国产浏览器给得晚、甚至始终为空但 speak 可用：
+   只有"列表空 且 从未真正出声"才提示，任何一次 onstart/onend 立刻撤提示 */
+let voiceEverStarted = false;
+function hideVoiceTip(){ const t=document.getElementById('noVoiceTip'); if(t) t.remove(); }
+function voiceCheckTip(){
+  if(!S.settings.voice || voiceEverStarted) return;
   let vs=[]; try{ vs = speechOk ? speechSynthesis.getVoices() : []; }catch(e){}
   if(zhVoice || vs.length) return;
+  if(document.getElementById('noVoiceTip')) return;
   const d=document.createElement('div'); d.id='noVoiceTip';
-  d.textContent='这台设备没找到中文语音，只有音效哦～建议用 Chrome / Edge / Safari 打开，别用微信内置浏览器';
+  d.textContent='暂未检测到中文语音引擎；若能听到声音可忽略此条，一直无声就换个浏览器（华为/小米自带浏览器最佳）';
   d.style.cssText='position:fixed;left:50%;top:12px;transform:translateX(-50%);background:rgba(90,74,66,.88);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;z-index:99;max-width:90vw;text-align:center;transition:opacity 1s;pointer-events:none';
   document.body.appendChild(d);
   setTimeout(()=>{ d.style.opacity='0'; setTimeout(()=>d.remove(),1200); },9000);
-},2000);
+}
+setTimeout(voiceCheckTip,2000);
+setTimeout(voiceCheckTip,6000);   /* 华为浏览器语音列表常 3~5 秒才到，二次复查防误报 */
 /* 语音队列：前一句说完再说下一句（之前每条都先 cancel，总把上一句掐到半截） */
 let voiceQ = [], voiceBusy = false, voiceIdleFns = [];
 function drainVoiceIdle(){
@@ -281,7 +287,8 @@ function pumpVoice(){
     const u = new SpeechSynthesisUtterance(txt);
     u.lang='zh-CN'; u.rate=S.settings.rate||1.6; u.pitch=1.35;
     if(zhVoice) u.voice=zhVoice;
-    u.onend = u.onerror = ()=>{ voiceBusy=false; pumpVoice(); drainVoiceIdle(); };
+    u.onstart = ()=>{ voiceEverStarted=true; hideVoiceTip(); };
+    u.onend = u.onerror = ()=>{ voiceEverStarted=true; hideVoiceTip(); voiceBusy=false; pumpVoice(); drainVoiceIdle(); };
     voiceBusy = true;
     speechSynthesis.speak(u);
   }catch(e){ voiceBusy=false; drainVoiceIdle(); }
