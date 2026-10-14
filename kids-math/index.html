@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>⭐ 数学乐园</title>
+<style>
+:root{
+  --cream:#FFF8EF; --mint:#A8E6CF; --peach:#FFD3B6; --sky:#A8D8EA;
+  --lilac:#D5AAFF; --sun:#FFE29A; --rose:#FFAAA5; --ink:#5B4A42;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+html,body{height:100%;}
+body{
+  margin:0;color:var(--ink);overflow:hidden;touch-action:manipulation;
+  font-family:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  background:linear-gradient(160deg,#FFF8EF 0%,#EAF7F0 48%,#EAF2FB 100%);
+}
+button{font-family:inherit;border:none;cursor:pointer;color:var(--ink);}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .35s;}
+.screen.on{opacity:1;pointer-events:auto;z-index:10;--s:1;}
+/* ---------- 通用 ---------- */
+.round-btn{width:60px;height:60px;border-radius:50%;font-size:28px;background:#fff;
+  box-shadow:0 6px 0 rgba(0,0,0,.06);transition:transform .15s;flex:none;}
+.round-btn:active{transform:scale(.88);}
+.round-btn.sm{width:52px;height:52px;font-size:24px;}
+.star-pill{background:#fff;border-radius:999px;padding:8px 18px;font-size:26px;font-weight:800;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);display:flex;align-items:center;gap:6px;}
+.big-btn{border-radius:36px;padding:22px 34px;font-size:44px;box-shadow:0 8px 0 rgba(0,0,0,.08);transition:transform .15s;}
+.big-btn:active{transform:scale(.9);}
+.big-btn.mint{background:linear-gradient(180deg,#BFF0DC,#8FD9BC);}
+.big-btn.peach{background:linear-gradient(180deg,#FFE3CE,#FFC49E);}
+/* ---------- 首页 ---------- */
+.home-top{display:flex;align-items:center;gap:14px;padding:calc(10px + env(safe-area-inset-top)) 18px 4px;}
+.home-title{font-size:clamp(28px,4.5vw,44px);font-weight:900;letter-spacing:6px;flex:1;
+  background:linear-gradient(90deg,#FF9F7F,#7FC8F8);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.home-title.small{font-size:24px;letter-spacing:2px;flex:none;}
+#mascot{width:120px;height:96px;flex:none;}
+.chapters{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,160px));
+  place-content:center;gap:clamp(14px,3vw,34px);padding:10px 20px;}
+.chap{aspect-ratio:1;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  background:linear-gradient(180deg,#FFFFFF,#F1F6FF);box-shadow:0 10px 0 rgba(0,0,0,.06);
+  transition:transform .15s;position:relative;animation:popin .5s cubic-bezier(.3,1.6,.5,1) backwards;}
+.chap:nth-child(1){background:linear-gradient(180deg,#FFE9E2,#FFCFC2)}
+.chap:nth-child(2){background:linear-gradient(180deg,#FFF3D9,#FFE2AE)}
+.chap:nth-child(3){background:linear-gradient(180deg,#E9F8EB,#CBEFCF)}
+.chap:nth-child(4){background:linear-gradient(180deg,#DEF2FB,#BEE4F6)}
+.chap:nth-child(5){background:linear-gradient(180deg,#F1E9FF,#DDCFFA)}
+.chap:nth-child(6){background:linear-gradient(180deg,#FFE9F3,#FFD2E6)}
+.chap:nth-child(7){background:linear-gradient(180deg,#FFE0CF,#FFC5AC)}
+.chap:active{transform:scale(.9);}
+.chap .chap-icon{font-size:clamp(40px,6vw,58px);}
+.chap .chap-stars{font-size:14px;color:#F5B301;letter-spacing:1px;}
+.chap.locked{opacity:.45;}   /* 保留彩色剪影让孩子眼馋下一关；灰掉会显得像缺了按钮 */
+.chap-lock{position:absolute;top:8%;right:10%;font-size:clamp(19px,3vw,26px);}
+.chap.shake{animation:shake .5s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+@keyframes popin{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.home-bottom{display:flex;justify-content:flex-end;gap:14px;padding:14px 22px calc(14px + env(safe-area-inset-bottom));}
+.gear.pressing{animation:gearfill 2s linear forwards;}
+@keyframes gearfill{from{box-shadow:0 0 0 0 rgba(255,226,154,.9) inset,0 6px 0 rgba(0,0,0,.06);}
+  to{box-shadow:0 0 0 60px rgba(255,226,154,.95) inset,0 6px 0 rgba(0,0,0,.06);}}
+/* ---------- 学习页 ---------- */
+.learn-top{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) 14px 4px;}
+.learn-top .sp{flex:1;}
+.stage-wrap{flex:1;margin:6px 14px;border-radius:36px;position:relative;overflow:hidden;
+  background:radial-gradient(circle at 50% 30%,#FFFFFF,#F3F9FF 70%,#EDF6EF);
+  box-shadow:inset 0 0 0 6px rgba(255,255,255,.8),0 10px 24px rgba(90,110,140,.10);}
+#stage{position:absolute;inset:0;width:100%;height:100%;touch-action:none;}
+#expr{min-height:64px;display:flex;align-items:center;justify-content:center;
+  font-size:clamp(40px,7vw,64px);font-weight:900;letter-spacing:8px;opacity:0;transition:opacity .5s;}
+#expr.on{opacity:1;animation:popin .5s cubic-bezier(.3,1.6,.5,1);}
+.pips{display:flex;gap:9px;align-items:center;flex:1;justify-content:center;}
+.pip{width:13px;height:13px;border-radius:50%;background:rgba(90,70,60,.13);transition:all .3s;}
+.pip.done{background:#FFD66E;}
+.pip.cur{background:#FFAF42;transform:scale(1.4);box-shadow:0 0 0 5px rgba(255,175,66,.25);}
+#answers{min-height:clamp(130px,20vh,200px);display:flex;align-items:center;justify-content:center;gap:clamp(14px,3vw,34px);
+  flex-wrap:wrap;padding:0 14px calc(10px + env(safe-area-inset-bottom));}
+.ans{width:clamp(88px,16vw,140px);height:clamp(88px,16vw,140px);border-radius:50%;
+  font-size:clamp(40px,7vw,62px);font-weight:900;transition:transform .18s,opacity .3s;
+  box-shadow:0 8px 0 rgba(0,0,0,.08);animation:popin .45s cubic-bezier(.3,1.6,.5,1) backwards;}
+.ans:nth-child(1){background:linear-gradient(180deg,#BCE7F7,#93CFE8);}
+.ans:nth-child(2){background:linear-gradient(180deg,#C9F0DD,#9EDFC2);}
+.ans:nth-child(3){background:linear-gradient(180deg,#FFDFC7,#FFC49E);}
+.ans{color:#54637E;text-shadow:0 2px 0 rgba(255,255,255,.75);}
+.ans.hint{animation:hintp .85s ease-in-out infinite;box-shadow:0 0 0 9px rgba(255,205,92,.55),0 8px 0 rgba(0,0,0,.08);}
+@keyframes hintp{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.ans:active{transform:scale(.88);}
+.ans.think{opacity:.35;transform:scale(.8);}
+.ans.wrong-shake{animation:shake .45s;}
+/* ---------- 3D 奖励屋 ---------- */
+#roomStage{flex:1;position:relative;margin:6px 14px;border-radius:36px;overflow:hidden;
+  background:radial-gradient(circle at 50% 20%,#FDF6FF,#EAF2FB 75%);box-shadow:inset 0 0 0 6px rgba(255,255,255,.8);}
+#roomStage canvas{display:block;}
+.room-bar{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 14px calc(12px + env(safe-area-inset-bottom));flex-wrap:wrap;}
+.swatch{width:48px;height:48px;border-radius:50%;box-shadow:0 4px 0 rgba(0,0,0,.08);transition:transform .15s;}
+.swatch:active{transform:scale(.85);}
+.swatch.on{outline:4px solid #fff;outline-offset:2px;box-shadow:0 0 0 6px rgba(0,0,0,.08);}
+#roomTip{width:100%;text-align:center;font-size:14px;color:#9ab;letter-spacing:2px;}
+.badges{display:flex;gap:4px;font-size:24px;flex-wrap:wrap;justify-content:flex-end;}
+.room-note{position:absolute;left:0;right:0;bottom:12px;text-align:center;color:#9ab;font-size:15px;}
+.d3{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;perspective:600px;}
+.d3 .fig{position:relative;width:120px;height:230px;transform-style:preserve-3d;animation:spin3d 7s linear infinite;}
+.d3 .fig div{position:absolute;left:50%;border-radius:99px;background:#FF9F7F;}
+.d3 .head{top:0;width:74px;height:74px;background:#FFF1E6;border:5px solid #FF9F7F;transform:translateX(-50%);}
+.d3 .body{top:76px;width:14px;height:76px;transform:translateX(-50%);}
+.d3 .armL{top:84px;width:12px;height:60px;transform:translateX(-50%) rotate(28deg);transform-origin:top center;}
+.d3 .armR{top:84px;width:12px;height:60px;transform:translateX(-50%) rotate(-28deg);transform-origin:top center;}
+.d3 .legL{top:150px;width:12px;height:72px;transform:translateX(-50%) rotate(14deg);transform-origin:top center;}
+.d3 .legR{top:150px;width:12px;height:72px;transform:translateX(-50%) rotate(-14deg);transform-origin:top center;}
+@keyframes spin3d{from{transform:rotateY(0)}to{transform:rotateY(360deg)}}
+/* ---------- 通关弹窗 ---------- */
+#doneOverlay{position:fixed;inset:0;background:rgba(255,250,240,.86);backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s;z-index:60;}
+#doneOverlay.on{opacity:1;pointer-events:auto;}
+.card{background:#fff;border-radius:48px;padding:34px 44px;display:flex;flex-direction:column;align-items:center;gap:18px;
+  box-shadow:0 20px 60px rgba(120,100,80,.2);animation:cardpop .55s cubic-bezier(.3,1.5,.5,1);}
+@keyframes cardpop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.done-stars{font-size:clamp(42px,9vw,64px);letter-spacing:4px;}
+.done-stars span{display:inline-block;animation:popin .4s cubic-bezier(.3,1.6,.5,1) backwards;}
+.done-badge{font-size:clamp(58px,12vw,88px);animation:badgebounce 1.2s ease infinite;}
+@keyframes badgebounce{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-14px) rotate(4deg)}}
+.card-btns{display:flex;gap:20px;}
+/* ---------- 家长面板 ---------- */
+#parent{position:fixed;top:0;right:0;bottom:0;width:min(430px,94vw);background:#fffdf8;z-index:70;
+  transform:translateX(105%);transition:transform .4s cubic-bezier(.3,1,.4,1);display:flex;flex-direction:column;
+  box-shadow:-10px 0 40px rgba(0,0,0,.15);border-radius:32px 0 0 32px;}
+#parent.on{transform:translateX(0);}
+.parent-head{display:flex;align-items:center;justify-content:space-between;padding:20px 22px 8px;font-size:26px;font-weight:900;letter-spacing:4px;}
+.parent-body{flex:1;overflow-y:auto;padding:8px 22px calc(20px + env(safe-area-inset-bottom));font-size:17px;}
+.p-sec{margin:16px 2px 8px;font-weight:800;color:#8a9aa8;letter-spacing:2px;}
+.p-row{display:flex;align-items:center;gap:14px;background:#fff;border-radius:18px;padding:10px 16px;margin:8px 0;
+  box-shadow:0 2px 8px rgba(0,0,0,.05);font-size:20px;}
+.p-row .p-stars{color:#F5B301;letter-spacing:2px;flex:1;}
+.seg{display:flex;gap:8px;margin:4px 0;flex-wrap:wrap;}
+.seg button{border-radius:999px;padding:10px 20px;font-size:18px;background:#eee;transition:transform .15s;}
+.seg button.on{background:linear-gradient(180deg,#FFEBB0,#FFD66E);}
+.small-btn{font-size:22px;padding:14px 22px;margin-top:18px;}
+/* ---------- 特效层 ---------- */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:90;}
+.fly-star{position:fixed;z-index:95;pointer-events:none;font-size:46px;transform:translate(-50%,-50%);}
+@media (max-height:520px){
+  .learn-top{padding-top:6px;} #expr{min-height:40px;} .round-btn{width:50px;height:50px;font-size:22px;}
+}
+</style>
+</head>
+<body>
+
+<!-- 首页 -->
+<div id="home" class="screen on">
+  <div class="home-top">
+    <canvas id="mascot" width="240" height="192"></canvas>
+    <div class="home-title">数学乐园</div>
+    <div class="star-pill">⭐&nbsp;<span id="homeStars">0</span></div>
+  </div>
+  <div id="chapters" class="chapters"></div>
+  <div class="home-bottom">
+    <button class="round-btn" id="btnRoom" aria-label="奖励屋">🏆</button>
+    <button class="round-btn gear" id="btnGear" aria-label="家长模式">⚙️</button>
+  </div>
+</div>
+
+<!-- 学习页 -->
+<div id="learn" class="screen">
+  <div class="learn-top">
+    <button class="round-btn sm" id="btnBack">🏠</button>
+    <button class="round-btn sm" id="btnReplay">🔊</button>
+    <button class="round-btn sm" id="btnGearL" aria-label="设置">⚙️</button>
+    <div class="pips" id="pips"></div>
+    <div class="sp"></div>
+    <div class="star-pill" id="learnPill">⭐&nbsp;<span id="learnStars">0</span></div>
+  </div>
+  <div class="stage-wrap"><canvas id="stage"></canvas></div>
+  <div id="expr"></div>
+  <div id="answers"></div>
+</div>
+
+<!-- 3D 奖励屋 -->
+<div id="room" class="screen">
+  <div class="learn-top">
+    <button class="round-btn sm" id="btnRoomBack">🏠</button>
+    <div class="sp"></div>
+    <div class="home-title small">我的火柴人朋友</div>
+    <div class="sp"></div>
+    <div id="roomBadges" class="badges"></div>
+  </div>
+  <div id="roomStage"></div>
+  <div class="room-bar">
+    <div id="swatches" style="display:flex;gap:10px;"></div>
+    <button class="round-btn sm" id="btnHat">🎩</button>
+    <div id="roomTip"></div>
+  </div>
+</div>
+
+<!-- 通关弹窗 -->
+<div id="doneOverlay"><div class="card">
+  <div id="doneStars" class="done-stars"></div>
+  <div id="doneBadge" class="done-badge"></div>
+  <div class="card-btns">
+    <button id="btnRetry" class="big-btn peach">🔁</button>
+    <button id="btnHome2" class="big-btn mint">🏠</button>
+  </div>
+</div></div>
+
+<!-- 家长面板 -->
+<div id="parent">
+  <div class="parent-head">家长模式 <button id="btnParentClose" class="round-btn sm">✖️</button></div>
+  <div id="parentBody" class="parent-body"></div>
+</div>
+
+<canvas id="fx"></canvas>
+
+<script>
+'use strict';
+/* ================= 工具 ================= */
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+const seg = (t,a,b)=>clamp((t-a)/(b-a),0,1);
+const ease = t=>t*t*(3-2*t);
+const easeOut = t=>1-Math.pow(1-t,3);
+const ri = (a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick = a=>a[Math.floor(Math.random()*a.length)];
+const QP = new URLSearchParams(location.search);
+const FORCE_DRAG = QP.get('drag')==='1', AUTODROP = QP.get('autodrop')==='1', SMOKE = QP.get('smoke')==='1';
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* ================= 存档 ================= */
+const SAVE_KEY = 'kidsMathSaveV1';
+function defSave(){return {v:1,stars:{},cleared:{},badges:[],welcomed:false,roomSeen:false,settings:{level:'normal',rate:1.6,voice:true,sfx:true,count:'help'},color:0,hat:false};}
+let S;
+try{ S = Object.assign(defSave(), JSON.parse(localStorage.getItem(SAVE_KEY)) || {}); }
+catch(e){ S = defSave(); }
+S.stars=S.stars||{}; S.cleared=S.cleared||{}; S.badges=S.badges||[];
+S.settings=Object.assign({level:'normal',rate:1.6,voice:true,sfx:true,count:'help'},S.settings||{});
+if(S.settings.rate<1.05){  /* 旧存档语速档迁移：0.55/0.8/0.95 → 1.1/1.6/1.9 */
+  S.settings.rate = S.settings.rate<.65 ? 1.1 : S.settings.rate<.9 ? 1.6 : 1.9;
+}
+const persist = ()=>{ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} };
+const totalStars = ()=>Object.values(S.stars).reduce((a,b)=>a+b,0);
+
+/* ================= 语音 ================= */
+const speechOk = 'speechSynthesis' in window;
+let zhVoice = null;
+function pickVoice(){
+  if(!speechOk) return;
+  const vs = speechSynthesis.getVoices();
+  zhVoice = vs.find(v=>/^zh/i.test(v.lang) && /xiaomei|xiaoxiao|yun|ting|mei|girl|女/i.test(v.name))
+         || vs.find(v=>/^zh/i.test(v.lang)) || null;
+  if(zhVoice){ const t=document.getElementById('noVoiceTip'); if(t) t.remove(); }
+}
+if(speechOk){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+/* 手机/微信浏览器可能没有语音引擎：只有效果音没旁白时，给用户一句话说明 */
+setTimeout(()=>{
+  if(!S.settings.voice) return;
+  let vs=[]; try{ vs = speechOk ? speechSynthesis.getVoices() : []; }catch(e){}
+  if(zhVoice || vs.length) return;
+  const d=document.createElement('div'); d.id='noVoiceTip';
+  d.textContent='这台设备没找到中文语音，只有音效哦～建议用 Chrome / Edge / Safari 打开，别用微信内置浏览器';
+  d.style.cssText='position:fixed;left:50%;top:12px;transform:translateX(-50%);background:rgba(90,74,66,.88);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;z-index:99;max-width:90vw;text-align:center;transition:opacity 1s;pointer-events:none';
+  document.body.appendChild(d);
+  setTimeout(()=>{ d.style.opacity='0'; setTimeout(()=>d.remove(),1200); },9000);
+},2000);
+/* 语音队列：前一句说完再说下一句（之前每条都先 cancel，总把上一句掐到半截） */
+let voiceQ = [], voiceBusy = false, voiceIdleFns = [];
+function drainVoiceIdle(){
+  if(voiceBusy || voiceQ.length) return;
+  const fns = voiceIdleFns.splice(0);
+  for(const f of fns){ try{ f(); }catch(e){} }
+}
+/* 语音全部念完后回调（引擎不回调时靠调用方自己的看门狗） */
+function onVoiceIdle(fn){ if(!voiceBusy && !voiceQ.length){ fn(); return; } voiceIdleFns.push(fn); }
+function say(txt){
+  if(!S.settings.voice || !speechOk || !txt) return;
+  voiceQ.push(txt); pumpVoice();
+}
+function pumpVoice(){
+  if(voiceBusy || !voiceQ.length) return;
+  const txt = voiceQ.shift();
+  try{
+    const u = new SpeechSynthesisUtterance(txt);
+    u.lang='zh-CN'; u.rate=S.settings.rate||1.6; u.pitch=1.35;
+    if(zhVoice) u.voice=zhVoice;
+    u.onend = u.onerror = ()=>{ voiceBusy=false; pumpVoice(); drainVoiceIdle(); };
+    voiceBusy = true;
+    speechSynthesis.speak(u);
+  }catch(e){ voiceBusy=false; drainVoiceIdle(); }
+}
+function cancelSpeech(){ voiceQ.length=0; voiceBusy=false; try{ speechSynthesis.cancel(); }catch(e){} drainVoiceIdle(); }
+/* Chromium 长语音 15 秒自动暂停 bug 的保活 */
+setInterval(()=>{ try{ if(speechOk && speechSynthesis.speaking && !speechSynthesis.paused) speechSynthesis.resume(); }catch(e){} }, 9000);
+
+/* ================= 音效 ================= */
+let AC = null;
+function ac(){
+  if(!AC){ try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(AC && AC.state==='suspended') AC.resume();
+  return AC;
+}
+function tone(f,d=.15,type='sine',g=.16,when=0){
+  const c = ac(); if(!c || !S.settings.sfx) return;
+  const o=c.createOscillator(), v=c.createGain(), t0=c.currentTime+when;
+  o.type=type; o.frequency.value=f;
+  v.gain.setValueAtTime(.0001,t0);
+  v.gain.exponentialRampToValueAtTime(g,t0+.02);
+  v.gain.exponentialRampToValueAtTime(.0001,t0+d);
+  o.connect(v).connect(c.destination); o.start(t0); o.stop(t0+d+.06);
+}
+const sfxClick = ()=>tone(700,.07,'triangle',.1);
+const sfxPop   = ()=>tone(520,.09,'triangle',.13);
+const sfxStar  = ()=>tone(1319,.22,'sine',.1);
+const sfxWrong = ()=>{ tone(300,.18,'sine',.14); tone(240,.22,'sine',.14,.12); };
+const sfxRight = ()=>[523,659,784,1047].forEach((f,i)=>tone(f,.16,'triangle',.15,i*.09));
+
+/* ================= 特效层 ================= */
+const fx = $('fx'), fxc = fx.getContext('2d');
+let parts = [];
+function fxResize(){
+  fx.width = innerWidth*devicePixelRatio; fx.height = innerHeight*devicePixelRatio;
+  fx.style.width = innerWidth+'px'; fx.style.height = innerHeight+'px';
+  fxc.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+}
+addEventListener('resize', fxResize); fxResize();
+const CONF = ['#FFAAA5','#FFD3B6','#FFE29A','#A8E6CF','#A8D8EA','#D5AAFF'];
+function confetti(n=90){
+  const cx=innerWidth/2, cy=innerHeight/3;
+  for(let i=0;i<n;i++) parts.push({
+    x:cx+(Math.random()-.5)*innerWidth*.6, y:cy+(Math.random()-.5)*90,
+    vx:(Math.random()-.5)*6, vy:-Math.random()*7-2, g:.25,
+    s:6+Math.random()*7, c:pick(CONF), r:Math.random()*6.28, vr:(Math.random()-.5)*.3,
+    life:0, max:80+Math.random()*50
+  });
+}
+function fxDraw(){
+  fxc.clearRect(0,0,innerWidth,innerHeight);
+  parts = parts.filter(p=>p.life<p.max);
+  for(const p of parts){
+    p.life++; p.x+=p.vx; p.y+=p.vy; p.vy+=p.g; p.r+=p.vr;
+    fxc.save(); fxc.translate(p.x,p.y); fxc.rotate(p.r);
+    fxc.globalAlpha = 1-p.life/p.max;
+    fxc.fillStyle = p.c; fxc.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);
+    fxc.restore();
+  }
+}
+function starFly(fromEl,toEl){
+  const a=fromEl.getBoundingClientRect(), b=toEl.getBoundingClientRect();
+  const s=document.createElement('div'); s.className='fly-star'; s.textContent='⭐';
+  s.style.left=(a.left+a.width/2)+'px'; s.style.top=(a.top+a.height/2)+'px';
+  document.body.appendChild(s);
+  const dx=b.left+b.width/2-(a.left+a.width/2), dy=b.top+b.height/2-(a.top+a.height/2);
+  s.animate([
+    {transform:'translate(-50%,-50%) scale(1.4)',opacity:1},
+    {transform:`translate(calc(-50% + ${dx*.5}px),calc(-50% + ${dy*.35 - 70}px)) scale(1.7)`,opacity:1,offset:.55},
+    {transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) scale(.7)`,opacity:.85}
+  ],{duration:950,easing:'cubic-bezier(.3,.6,.4,1)'}).onfinish=()=>{ s.remove(); sfxStar(); $('homeStars').textContent=totalStars(); };
+}
+
+/* ================= 关卡 ================= */
+const CHAPTERS = [
+  {id:'add5', icon:'🐣', kind:'add', base:5,  name:'小鸡加法'},
+  {id:'sub5', icon:'🐥', kind:'sub', base:5,  name:'小鸡减法'},
+  {id:'add10',icon:'🐢', kind:'add', base:10, name:'乌龟加法'},
+  {id:'sub10',icon:'🐟', kind:'sub', base:10, name:'小鱼减法'},
+  {id:'mul',  icon:'🦆', kind:'mul',          name:'小鸭排队'},
+  {id:'div',  icon:'🦢', kind:'div',          name:'天鹅分圈'},
+  {id:'big',  icon:'👑', kind:'mix', base:20, name:'王者挑战'},
+];
+const MAX_PER_CHAP = 6;
+function effMax(ch){
+  const base = ch.base || 10;
+  return clamp(S.settings.level==='hard' ? base*2 : base, 3, 20);  /* 简单档不再缩关卡范围，只简化乘除法 */
+}
+function chapUnlocked(i){ return i===0 || !!S.cleared[CHAPTERS[i-1].id]; }
+
+function genProblem(ch, idx){
+  const r = MAX_PER_CHAP>1 ? idx/(MAX_PER_CHAP-1) : 0;   /* 爬坡系数：一关内数字由小到大 */
+  const kind = ch.kind==='mix' ? pick(['add','sub']) : ch.kind;
+  const M = effMax(ch), lv = S.settings.level;
+  if(kind==='add'){
+    const sum = clamp(2 + Math.round(r*(M-2)) + ri(-1,1), 2, M);
+    const a = ri(1, sum-1), b = sum-a;
+    let drag = (FORCE_DRAG&&idx===0) || idx===MAX_PER_CHAP-1 || Math.random()<.3;
+    return {kind,a,b,ans:sum, drag: drag && b<=5};
+  }
+  if(kind==='sub'){
+    const n = clamp(2 + Math.round(r*(M-2)) + ri(-1,1), 2, M);
+    const b = ri(1, n-1);
+    return {kind,n,b,ans:n-b};
+  }
+  if(kind==='mul'){
+    const capC = lv==='easy' ? 3 : 4;
+    const c  = clamp(2 + Math.round(r*(capC-2)) + ri(0,1), 2, capC);
+    const rr = (lv==='easy' || r<.66) ? 2 : 3;
+    return {kind,r:rr,c,ans:rr*c};
+  }
+  const per = clamp(2 + Math.round(r*2) + (Math.random()<.3?1:0), 2, 4);
+  const g   = lv==='easy' ? 2 : (r>.5 ? ri(2,3) : 2);
+  return {kind:'div', n:g*per, g, ans:per};
+}
+function makeOptions(p){
+  const ans=p.ans;
+  let pool;
+  /* 干扰项选孩子真实会犯的错：走掉的个数/剩下的排数/每排人数等 */
+  if(p.kind==='mul')      pool=[ans+p.r, ans-p.c, ans+1, ans-1, ans+2];
+  else if(p.kind==='div') pool=[p.n, p.g, ans+1, ans-1, ans+2];
+  else if(p.kind==='sub') pool=[ans+1, ans-1, ans+2, ans-2, p.b, p.n];
+  else                    pool=[ans+1, ans-1, ans+2, ans-2, ans+(p.b||0), ans-(p.b||0)];
+  pool=shuffle(pool.map(v=>Math.round(v)).filter(v=>v>=0&&v<=30&&v!==ans));
+  const set=[ans];
+  for(const v of pool){ if(set.length>=3) break; if(!set.includes(v)) set.push(v); }
+  for(let d=1;set.length<3;d++){ const v=ans+d; if(v<=30&&!set.includes(v)) set.push(v); }
+  return shuffle(set);
+}
+const PRAISE = ['太棒啦！','你真聪明！','答对啦，好厉害！','哇，都会数了！','真了不起！'];
+const RETRY  = ['再数一数试试吧～','想一想，再来一次～','没关系，我们再看一遍～','慢慢数，你可以的～'];
+function voiceScript(p){
+  if(p.kind==='add') return p.drag
+    ? [[0,`圈圈里有 ${p.a} 个小朋友～`],[.35,`把 ${p.b} 个小朋友也请进圈圈里，一个一个拖进去！`]]
+    : [[0,`看！走来了 ${p.a} 个小朋友～`],[.45,`又来了 ${p.b} 个！`],[.8,'现在一共有几个呀？']];
+  if(p.kind==='sub') return [[0,`这里有 ${p.n} 个小朋友～`],[.38,`咦？有 ${p.b} 个摆摆手，回家啦～`],[.78,'现在还剩下几个呀？']];
+  if(p.kind==='mul') return [[0,'小朋友排队啦～'],[.3,`${p.r} 排队伍，每排 ${p.c} 个人。一共有几个人呀？`]];
+  return [[0,`${p.n} 个小朋友，要平均分到 ${p.g} 个圈圈里～`],[.7,'每个圈圈里有几个呀？']];
+}
+function exprText(p){
+  if(p.kind==='add') return `${p.a} + ${p.b} = ?`;
+  if(p.kind==='sub') return `${p.n} − ${p.b} = ?`;
+  if(p.kind==='mul') return `${p.r} × ${p.c} = ?`;
+  return `${p.n} ÷ ${p.g} = ?`;
+}
+/* 答对后把算式念成孩子的语言：完成"画面—数字—语言"的闭环 */
+function exprSpeak(p){
+  if(p.kind==='add') return `${p.a}加${p.b}等于${p.ans}，一共${p.ans}个小朋友！`;
+  if(p.kind==='sub') return `原来有${p.n}个，走开了${p.b}个，还剩${p.ans}个！`;
+  if(p.kind==='mul') return `每排${p.c}个，有这样的${p.r}排，一共${p.ans}个！`;
+  return `${p.n}个小朋友，平均分成${p.g}组，每组刚好${p.ans}个！`;
+}
+
+/* ================= 火柴人（2D） ================= */
+const KCOL = ['#FF9F7F','#7FC8F8','#9BD9A0','#C9A7F5','#F8C0D0','#F5C46E'];
+function rrect(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y);
+  c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function drawKid(ctx,x,y,sc,o={}){
+  /* Q 版 SVG 画风小人：大头短身、圆腮红、发揪毛球。契约：脚底基线 y、总高约60*sc */
+  const color=o.color||'#FF9F7F', walk=o.walk||0, ph=o.phase||0, hop=o.hop||0;
+  const t=o.t||0, alpha=o.alpha==null?1:o.alpha;
+  if(alpha<=0) return;
+  ctx.save();
+  ctx.translate(x,y-hop); if(o.flip) ctx.scale(-sc,sc); else ctx.scale(sc,sc);
+  ctx.globalAlpha=alpha*.13; ctx.fillStyle='#3a3f5a';
+  ctx.beginPath(); ctx.ellipse(0,hop+18,16,4.5,0,0,6.29); ctx.fill();
+  ctx.globalAlpha=alpha;
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  const s=Math.sin(ph), dark='rgba(0,0,0,.14)';
+  /* 短粗腿：走路时前后摆 */
+  const legA = walk ? -s*7 : -3.5, legB = walk ? s*7 : 3.5;
+  ctx.strokeStyle=color; ctx.lineWidth=5.5;
+  ctx.beginPath(); ctx.moveTo(-3,3); ctx.lineTo(-3+legA*.55,17-Math.max(0,legA)*.35*walk); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(3,3);  ctx.lineTo(3+legB*.55,17-Math.max(0,legB)*.35*walk); ctx.stroke();
+  /* 手臂 */
+  let armRA=.3, armLA=-.3;
+  if(walk){ armRA=.3-s*.5; armLA=-.3+s*.5; }
+  if(o.wave)  armRA = 2.5+Math.sin(t*9)*.3;
+  if(o.wave2) armLA = -(2.5+Math.sin(t*9+1)*.3);
+  ctx.lineWidth=5;
+  ctx.beginPath(); ctx.moveTo(7.5,-9); ctx.lineTo(7.5+Math.sin(armRA)*11,-9+Math.cos(armRA)*11); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-7.5,-9); ctx.lineTo(-7.5+Math.sin(armLA)*11,-9+Math.cos(armLA)*11); ctx.stroke();
+  /* 圆滚滚身体（连体衣+高光） */
+  ctx.fillStyle=color; ctx.strokeStyle=dark; ctx.lineWidth=1.6;
+  rrect(ctx,-8,-14,16,19,8); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.25)'; rrect(ctx,-5,-11,4,6,2); ctx.fill();
+  /* 大头 */
+  ctx.save();
+  ctx.translate(0,-16); ctx.rotate(o.tilt||0);
+  ctx.fillStyle='#FFF3E8'; ctx.strokeStyle=dark; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.arc(0,-13,12.5,0,6.29); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=color;   /* 刘海毛球 */
+  for(const[hx,hy,hr] of [[-8.5,-18.5,4.6],[0,-21.5,5.4],[8.5,-18.5,4.6]]){
+    ctx.beginPath(); ctx.arc(hx,hy,hr,0,6.29); ctx.fill(); }
+  ctx.fillStyle='#5B4A42';   /* 圆眼睛+高光 */
+  ctx.beginPath(); ctx.arc(-4.4,-12.5,2.1,0,6.29); ctx.arc(4.4,-12.5,2.1,0,6.29); ctx.fill();
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(-3.7,-13.2,.7,0,6.29); ctx.arc(5.1,-13.2,.7,0,6.29); ctx.fill();
+  ctx.strokeStyle='#5B4A42'; ctx.lineWidth=1.5;   /* 微笑 */
+  ctx.beginPath(); ctx.arc(0,-10,3.6,Math.PI*.15,Math.PI*.85); ctx.stroke();
+  ctx.fillStyle='rgba(255,140,120,.45)';           /* 腮红 */
+  ctx.beginPath(); ctx.arc(-7.6,-9,2.4,0,6.29); ctx.arc(7.6,-9,2.4,0,6.29); ctx.fill();
+  ctx.restore();
+  if(o.think){
+    ctx.globalAlpha = alpha*(.6+.4*Math.sin(t*5));
+    ctx.fillStyle='#fff'; ctx.strokeStyle=color; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(18,-50,9,0,6.29); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#5B4A42'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('?',18,-49.5);
+    ctx.globalAlpha=alpha;
+  }
+  if(o.bubble!=null){
+    if(o.flip) ctx.scale(-1,1);   /* 镜像走位的小人，头顶气泡要翻回来，数字才不反 */
+    ctx.fillStyle='rgba(255,255,255,.95)'; ctx.strokeStyle=color; ctx.lineWidth=2.6;
+    ctx.beginPath(); ctx.arc(0,-52,12,0,6.29); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#5B4A42'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(String(o.bubble),0,-51);
+  }
+  ctx.restore();
+}
+
+/* ================= 舞台 & 场景 ================= */
+const stage = $('stage'), sctx = stage.getContext('2d');
+let SW=600, SH=380, scene=null, activeDrag=null;
+function resizeStage(){
+  const r = stage.getBoundingClientRect(), d = devicePixelRatio||1;
+  const w=Math.round(r.width*d), h=Math.round(r.height*d);
+  if(stage.width!==w||stage.height!==h){ stage.width=w; stage.height=h; }
+  SW=r.width; SH=r.height;
+  sctx.setTransform(d,0,0,d,0,0);
+}
+function U(){ return clamp(Math.min(SW/700, SH/440), .68, 1.6); }
+function rowPosAt(n, cxFrac, yFrac, maxSp=64){
+  const sp = Math.min(maxSp*U(), SW*.84/Math.max(n,1));
+  const x0 = SW*cxFrac-(n-1)*sp/2;
+  return Array.from({length:n},(_,i)=>({x:x0+i*sp, y:SH*yFrac}));
+}
+function gridPos(r,c){
+  const sp=Math.min(56*U(), SW*.74/Math.max(c,1)), dy=Math.min(52*U(), SH*.16);
+  const y0=SH*.5-((r-1)*dy)/2-8, arr=[];
+  for(let j=0;j<r;j++) for(let i=0;i<c;i++) arr.push({x:SW/2-(c-1)*sp/2+i*sp, y:y0+j*dy});
+  return {cells:arr, sp};
+}
+const kidColor = i => KCOL[i%KCOL.length];
+/* 舞台背景：太阳/飘云/双层山丘/摇摆小花 */
+function drawScenery(now){
+  const tt=now/1000, u=U();
+  const sx=SW-66*u, sy=62*u, sr=(28+3*Math.sin(tt*.9))*u;
+  const g=sctx.createRadialGradient(sx,sy,2,sx,sy,sr*2.3);
+  g.addColorStop(0,'rgba(255,242,183,.9)'); g.addColorStop(1,'rgba(255,242,183,0)');
+  sctx.fillStyle=g; sctx.beginPath(); sctx.arc(sx,sy,sr*2.3,0,6.3); sctx.fill();
+  sctx.fillStyle='#FFEB9E'; sctx.beginPath(); sctx.arc(sx,sy,sr,0,6.3); sctx.fill();
+  const cloud=(x,y,s)=>{ sctx.fillStyle='rgba(255,255,255,.85)';
+    for(const[dx,dy,r]of[[-26,5,16],[0,-6,20],[26,5,15]]){ sctx.beginPath(); sctx.arc(x+dx*s,y+dy*s,r*s,0,6.3); sctx.fill(); } };
+  cloud(((tt*14)%(SW+260))-130, 50*u, u*1.05);
+  cloud(((tt*9+SW*.55)%(SW+260))-130, 30*u, u*.8);
+  sctx.fillStyle='#CDEDD9'; sctx.beginPath(); sctx.ellipse(SW*.28,SH*1.42,SW*.8,SH*.82,0,0,6.3); sctx.fill();
+  sctx.fillStyle='#BCE4CB'; sctx.beginPath(); sctx.ellipse(SW*.85,SH*1.5,SW*.7,SH*.86,0,0,6.3); sctx.fill();
+  const fx=[.08,.33,.64,.93], fy=[.79,.87,.81,.9];
+  for(let i=0;i<4;i++){
+    const x=SW*fx[i], y=SH*fy[i]+Math.sin(tt*1.3+i)*2;
+    sctx.fillStyle=['#FFAAA5','#D5AAFF','#FFD3B6','#9FCFE8'][i];
+    for(let k=0;k<5;k++){ const a=k*1.256+tt*.3;
+      sctx.beginPath(); sctx.arc(x+Math.cos(a)*5*u,y+Math.sin(a)*5*u,3.4*u,0,6.3); sctx.fill(); }
+    sctx.fillStyle='#FFF3C4'; sctx.beginPath(); sctx.arc(x,y,3.2*u,0,6.3); sctx.fill();
+  }
+}
+/* 头顶报数：家长可关。'help'=前半关自动帮数（默认），'self'=全程自己数 */
+function kidNums(p){
+  const mode=S.settings.count||'help';
+  return mode!=='self' && (p.ramp||0)<.5;
+}
+
+/* 加法：两队走进 → 汇合 → 手拉手报数 */
+function sceneAdd(p){
+  const total=p.a+p.b;
+  const A=rowPosAt(p.a,.28,.6), B=rowPosAt(p.b,.72,.6), C=rowPosAt(total,.5,.57);
+  const stg=Math.min(.08,.2/total);   /* 报数节奏压缩，保证 20 以内也能在动画内数完 */
+  const showN=kidNums(p);   /* 头顶数字按家长开关和关卡进度启用 */
+  return { dur:4400, draw(t,now){
+    const t1=easeOut(seg(t,0,.3)), t2=ease(seg(t,.36,.62));
+    const cel = t>.7 ? Math.abs(Math.sin(t*18))*7*U() : 0;
+    const tt=now/1000, nums=showN&&t<.95;   /* 出题面前数字收走，不许抄现成的 */
+    for(let i=0;i<p.a;i++){
+      const fromX=-40-i*24;
+      let x=lerp(fromX,A[i].x,t1), moving=t1<1;
+      if(t>=.36){ x=lerp(A[i].x,C[i].x,t2); moving=t2<1; }
+      const num = nums && t>.72+i*stg ? i+1 : null;
+      drawKid(sctx,x,A[i].y,1.12*U(),{color:kidColor(i),walk:moving?1:0,phase:t*(moving?42:0),t:tt,hop:cel,bubble:num});
+    }
+    for(let i=0;i<p.b;i++){
+      const ci=p.a+i;
+      const fromX=SW+40+i*24;
+      let x=lerp(fromX,B[i].x,t1), moving=t1<1;
+      if(t>=.36){ x=lerp(B[i].x,C[ci].x,t2); moving=t2<1; }
+      const num = nums && t>.72+ci*stg ? ci+1 : null;
+      drawKid(sctx,x,B[i].y,1.12*U(),{flip:true,color:kidColor(ci),walk:moving?1:0,phase:t*(moving?42:0),t:tt,hop:cel,bubble:num,wave:t>.75?1:0});
+    }
+  }};
+}
+
+/* 减法：整排站立 → 几个挥手走开 → 剩下报数 */
+function sceneSub(p){
+  const all=rowPosAt(p.n,.5,.57);
+  const goneStart=p.n-p.b;
+  return { dur:4600, draw(t,now){
+    const t1=easeOut(seg(t,0,.22)), tt=now/1000;
+    const showN=kidNums(p), nums=showN&&t<.95;
+    for(let i=0;i<p.n;i++){
+      const slot=all[i];
+      let x=lerp(-40-i*24, slot.x, t1), y=slot.y, walk=t1<1?1:0, alpha=1, wave=0, flip=false, hop=0, num=null;
+      if(i>=goneStart){
+        const tW=ease(seg(t,.26,.42)), tOut=ease(seg(t,.44,.8));
+        if(t<.26){ /* 等待 */ }
+        x = t<.44 ? lerp(slot.x, slot.x-18*U(), tW) : lerp(slot.x-18*U(), SW+70, tOut);
+        wave = t>.22&&t<.5 ? 1:0;
+        walk = (t>=.44&&tOut<1)?1:0; flip=true;
+        alpha = tOut>.85 ? 1-(tOut-.85)/.15 : 1;
+        if(tOut>=1){
+          sctx.save(); sctx.globalAlpha=.4; sctx.strokeStyle='#c0c8d8';
+          sctx.setLineDash([5,6]); sctx.lineWidth=2;
+          sctx.beginPath(); sctx.arc(slot.x, slot.y-24*U(), 26*U(),0,6.29); sctx.stroke();
+          sctx.setLineDash([]); sctx.restore();
+          alpha=0;
+        }
+      } else if(t>.82){
+        hop=Math.abs(Math.sin(t*16+i))*7*U();
+        num=nums&&t>.84+i*Math.min(.09,.12/Math.max(goneStart,1))?i+1:null;
+      }
+      drawKid(sctx,x,y,1.12*U(),{color:kidColor(i),walk,phase:t*(walk?40:0),t:tt,alpha,wave,flip,hop,bubble:num});
+    }
+  }};
+}
+
+/* 乘法：走成方阵 → 逐排点亮数点 → 全体欢呼 */
+function sceneMul(p){
+  const {cells,sp}=gridPos(p.r,p.c);
+  return { dur:5200, draw(t,now){
+    const tt=now/1000, hlA=.4, hlB=.78;
+    const showN=kidNums(p), nums=showN&&t<.9;
+    const prog = t<hlA ? -1 : (t<hlB ? seg(t,hlA,hlB)*p.r : p.r);
+    for(let j=0;j<p.r;j++){
+      for(let i=0;i<p.c;i++){
+        const k=j*p.c+i, c=cells[k];
+        const tIn=easeOut(seg(t,k*.025,k*.025+.2));
+        if(tIn<=0) continue;
+        const x=lerp(-50,c.x,tIn), y=lerp(SH*.95,c.y,tIn);
+        const moving=tIn<1;
+        let alpha=1, num=null;
+        if(prog>=0){
+          if(nums&&(prog-j)*p.c-i>=1){ num=i+1; }     /* 已点亮：头顶报数（后半关不标） */
+          else if(prog-j<=0){ alpha=.3; }              /* 还没讲到的排 */
+          else { alpha=.5; }                           /* 正在数的排里未点亮的 */
+        }
+        const hop=(t>hlB)?Math.abs(Math.sin((t*3+k)*5))*6*U():0;
+        drawKid(sctx,x,y,1.04*U(),{color:kidColor(k),walk:moving?1:0,phase:t*(moving?36:0),t:tt,alpha,hop,bubble:num});
+      }
+      const dotY=cells[j*p.c].y-52*U();
+      const dots = prog<0 ? 0 : clamp(Math.round((prog-j)*p.c),0,p.c);
+      for(let i=0;i<dots;i++){
+        sctx.fillStyle='#F5B301';
+        sctx.beginPath();
+        sctx.arc(cells[j*p.c].x-((p.c-1)*13*U())/2+i*13*U(), dotY, 4.6*U(),0,6.29);
+        sctx.fill();
+      }
+    }
+  }};
+}
+
+/* 除法：排队 → 圈圈出现 → 轮流跳进圈 → 圈内报数 */
+function sceneDiv(p){
+  const per=p.n/p.g;
+  const gap=Math.min(.055,.38/p.n);   /* 人多时压缩跳跃间隔，保证动画播完前全部进圈 */
+  return { dur:4200+p.n*140, draw(t,now){
+    const tt=now/1000;
+    const showN=kidNums(p), nums=showN&&t<.94;
+    const t1=easeOut(seg(t,0,.2));
+    const hY=SH*.66, hRX=Math.min(84*U(),SW*.16), hRY=26*U();
+    const homeSp=Math.min(46*U(), SW*.86/Math.max(p.n,1));
+    const homeX=k=>SW/2-((p.n-1)*homeSp)/2+k*homeSp;
+    const spread=Math.min(190*U(), (SW*.94-2*hRX)/Math.max(p.g-1,1));
+    const hoopX=j=>SW/2+(j-(p.g-1)/2)*spread;
+    for(let j=0;j<p.g;j++){
+      const app=ease(seg(t,.24,.4));
+      if(app<=0) continue;
+      const bump=1+((t>.8)?Math.abs(Math.sin(t*10+j*1.3))*.08:0);
+      sctx.save(); sctx.translate(hoopX(j),hY);
+      sctx.fillStyle='rgba(209,232,255,.6)';
+      sctx.beginPath(); sctx.ellipse(0,0,hRX*app*bump,hRY*app*bump,0,0,6.29); sctx.fill();
+      sctx.strokeStyle='#8FC4E0'; sctx.lineWidth=5*U();
+      sctx.beginPath(); sctx.ellipse(0,0,hRX*app*bump,hRY*app*bump,0,0,6.29); sctx.stroke();
+      sctx.restore();
+    }
+    for(let k=0;k<p.n;k++){
+      const gk=k%p.g, slot=Math.floor(k/p.g), seq=slot*p.g+gk;
+      const destX=hoopX(gk)+(slot-(per-1)/2)*Math.min(36*U(),hRX*1.6/Math.max(per,1));
+      const destY=hY-14*U();
+      const hop0=.42+seq*gap, tEnd=hop0+.13, landed=tEnd+.09;
+      if(t<.22||t1<1){
+        const x=lerp(-40-k*30,homeX(k),t1);
+        drawKid(sctx,x,SH*.26,1.05*U(),{color:kidColor(k),walk:t1<1?1:0,phase:t*(t1<1?40:0),t:tt});
+      } else if(t>=tEnd){
+        const num=nums&&t>landed?slot+1:null;
+        const hop=t>.88?Math.abs(Math.sin(t*12+k))*6*U():0;
+        drawKid(sctx,destX,destY,1.02*U(),{color:kidColor(k),t:tt,hop,bubble:num});
+      } else {
+        const tHop=ease(seg(t,hop0,tEnd));
+        const x=lerp(homeX(k),destX,tHop);
+        const arc=Math.sin(tHop*Math.PI)*72*U();
+        drawKid(sctx,x,lerp(SH*.26,destY,tHop)-arc,1.05*U(),{color:kidColor(k),t:tt});
+      }
+    }
+  }};
+}
+
+/* 操作题：把小朋友拖进圈圈 */
+function sceneDrag(p){
+  const ctl={kids:[],grab:null,done:false,onDone:null};
+  for(let i=0;i<p.b;i++) ctl.kids.push({x:0,y:0,inside:false,drag:false,init:false});
+  const hoop={x:0,y:0,rx:0,ry:0};
+  ctl.complete=()=>{
+    if(ctl.done) return; ctl.done=true; confetti(40);
+    setTimeout(()=>{
+      if(kidNums(p)) ctl.numUntil=performance.now()+3400;   /* 数一遍就收走，答案要自己数 */
+      say('全部进来啦！数一数一共几个呀？');
+      if(ctl.onDone) ctl.onDone();
+    },600);
+  };
+  ctl.pointer=(type,e)=>{
+    const r=stage.getBoundingClientRect();
+    const px=e.clientX-r.left, py=e.clientY-r.top;
+    if(type==='down'){
+      let best=null,bd=58;
+      ctl.kids.forEach((k,i)=>{ if(k.inside) return;
+        const d=Math.hypot(px-k.x,py-k.y); if(d<bd){bd=d;best=i;} });
+      if(best!=null){ ctl.grab=best; ctl.kids[best].drag=true; tone(620,.06,'triangle',.08); }
+    } else if(type==='move'&&ctl.grab!=null){
+      const k=ctl.kids[ctl.grab]; k.x=px; k.y=py;
+    } else if(type==='up'&&ctl.grab!=null){
+      const k=ctl.kids[ctl.grab]; k.drag=false;
+      const dx=(px-hoop.x)/(hoop.rx+26), dy=(py-hoop.y)/(hoop.ry+46);
+      if(dx*dx+dy*dy<1){
+        k.inside=true; sfxPop();
+        if(ctl.kids.every(q=>q.inside)) ctl.complete();
+      }
+      ctl.grab=null;
+    }
+  };
+  activeDrag=ctl;
+  if(AUTODROP) ctl.kids.forEach((k,i)=> setTimeout(()=>{   /* 冒烟自测用：自动摆小进圈 */
+    k.inside=true; tone(520,.08,'triangle',.12);
+    if(ctl.kids.every(q=>q.inside)) ctl.complete();
+  }, 1400+i*700));
+  return { dur:1e12, draw(t,now){
+    hoop.rx=Math.min(94*U(),SW*.19); hoop.ry=30*U();
+    hoop.x=SW*.28; hoop.y=SH*.55;
+    const insideIdx=[]; ctl.kids.forEach((k,i)=>{ if(k.inside) insideIdx.push(i); });
+    const inAll=p.a+insideIdx.length;
+    const showN=kidNums(p)&&!!ctl.numUntil&&now<ctl.numUntil;
+    const packX=gi=>hoop.x+((gi-(inAll-1)/2)*Math.min(34*U(),hoop.rx*1.7/Math.max(inAll,1)));
+    sctx.save();
+    sctx.fillStyle='rgba(214,240,225,.7)';
+    sctx.strokeStyle='#8FD9BC'; sctx.lineWidth=6*U();
+    sctx.beginPath(); sctx.ellipse(hoop.x,hoop.y,hoop.rx,hoop.ry,0,0,6.29); sctx.fill(); sctx.stroke();
+    sctx.restore();
+    const tt=now/1000;
+    for(let i=0;i<p.a;i++)
+      drawKid(sctx,packX(i),hoop.y-13*U(),1.02*U(),{color:kidColor(i),t:tt,
+        hop:ctl.done?Math.abs(Math.sin(now/160+i))*7*U():0, bubble:showN?i+1:null});
+    insideIdx.forEach((idx,n)=>{
+      const gi=p.a+n;
+      drawKid(sctx,packX(gi),hoop.y-13*U(),1.02*U(),{color:kidColor(p.a+idx),t:tt,
+        wave:ctl.done?1:0, hop:ctl.done?Math.abs(Math.sin(now/160+idx))*7*U():0,
+        bubble:showN?gi+1:null});
+    });
+    let hintShown=false;
+    ctl.kids.forEach((k,idx)=>{
+      if(k.inside) return;
+      const homeX=SW*.64+(idx%2)*54*U(), homeY=SH*.22+Math.floor(idx/2)*66*U();
+      if(!k.init){ k.x=homeX; k.y=homeY; k.init=true; }
+      if(!k.drag){ k.x=lerp(k.x,homeX,.18); k.y=lerp(k.y,homeY+Math.sin(tt*2.4+idx)*5,.3); }
+      drawKid(sctx,k.x,k.y,1.08*U(),{color:kidColor(p.a+idx),t:tt});
+      if(!hintShown&&ctl.grab==null&&!ctl.done){
+        hintShown=true;
+        sctx.globalAlpha=.5+.5*Math.sin(tt*4);
+        sctx.font=`${26*U()}px sans-serif`; sctx.textAlign='center';
+        sctx.fillText('👆',k.x+24*U(),k.y-42*U());
+        sctx.globalAlpha=1;
+      }
+    });
+  }};
+}
+function sceneFor(p){
+  if(p.drag) return sceneDrag(p);
+  if(p.kind==='add') return sceneAdd(p);
+  if(p.kind==='sub') return sceneSub(p);
+  if(p.kind==='mul') return sceneMul(p);
+  return sceneDiv(p);
+}
+function drawStage(now){
+  resizeStage();
+  sctx.clearRect(0,0,SW,SH);
+  sctx.textBaseline='alphabetic';
+  drawScenery(now);
+  if(!scene) return;
+  const t = clamp((now-scene.t0)/scene.dur,0,1);
+  scene.draw(t,now);
+  if(!scene.done && t>=1){ scene.done=true; if(!scene.nodo) Learn.onSceneDone(); }
+}
+
+/* ================= 屏幕切换 ================= */
+let cur='home';
+function showScreen(name){
+  cur=name;
+  for(const s of ['home','learn','room']) $(s).classList.toggle('on', s===name);
+  if(name!=='room') Room.stop();
+  if(name!=='learn'){ scene=null; activeDrag=null; cancelSpeech(); }
+  if(name==='home') renderHome();
+}
+stage.addEventListener('pointerdown',e=>{ if(activeDrag) activeDrag.pointer('down',e); });
+stage.addEventListener('pointermove',e=>{ if(activeDrag) activeDrag.pointer('move',e); });
+addEventListener('pointerup',e=>{ if(activeDrag) activeDrag.pointer('up',e); });
+addEventListener('pointercancel',e=>{ if(activeDrag) activeDrag.pointer('up',e); });
+document.addEventListener('contextmenu',e=>e.preventDefault());
+
+/* ================= 学习控制器 ================= */
+const Learn = {
+  chap:null, list:[], idx:0, p:null, first:true, wrong:0, got:0, timers:[], busy:false,
+  clearTimers(){ this.timers.forEach(clearTimeout); this.timers=[]; },
+  start(ch){
+    this.chap=ch;
+    this.list=[];
+    const seen=new Set();
+    for(let i=0;i<MAX_PER_CHAP;i++){   /* 同关内不出重复题 */
+      let p,sig,n=0;
+      do{
+        p=genProblem(ch,i);
+        sig=p.kind+':'+[p.a,p.b,p.n,p.r,p.c,p.g].filter(v=>v!=null).join('.');
+        n++;
+      }while(seen.has(sig) && n<25);
+      p.ramp=i/(MAX_PER_CHAP-1);   /* 前半关头顶报数，后半关数字退场让孩子自己数 */
+      seen.add(sig); this.list.push(p);
+    }
+    this.idx=0; this.got=0;
+    $('doneOverlay').classList.remove('on');
+    showScreen('learn');
+    this.load();
+  },
+  load(){
+    this.clearTimers();
+    cancelSpeech();
+    const p=this.p=this.list[this.idx];
+    this.first=true; this.wrong=0; this.busy=false;
+    $('answers').innerHTML='';
+    $('expr').classList.remove('on'); $('expr').textContent='';
+    activeDrag=null;
+    resizeStage();                       /* 先量画布再摆位，防第一题按默认尺寸挤在左上角 */
+    renderPips(this.idx);
+    scene=sceneFor(p);
+    scene.t0=performance.now(); scene.done=false;
+    const voiceDur = p.drag ? 3600 : scene.dur;   /* 拖拽题没有动画时长，按固定节奏播 */
+    voiceScript(p).forEach(([tf,txt])=>{
+      if(tf===0){ say(txt); return; }             /* 第一句在点击事件里同步播出，防 iOS 丢异步语音 */
+      this.timers.push(setTimeout(()=>say(txt), tf*voiceDur));
+    });
+    if(p.drag && activeDrag){
+      activeDrag.onDone=()=>{
+        $('expr').textContent=exprText(p); $('expr').classList.add('on');
+        this.showAnswers();
+      };
+    }
+    $('learnStars').textContent=this.got;
+  },
+  onSceneDone(){
+    if(cur!=='learn'||!this.p) return;
+    $('expr').textContent=exprText(this.p);
+    $('expr').classList.add('on');
+    if(!this.p.drag) this.showAnswers();
+  },
+  showAnswers(){
+    if(cur!=='learn') return;
+    const box=$('answers');
+    if(box.childElementCount) return;   /* 只显示一次 */
+    makeOptions(this.p).forEach((v,i)=>{
+      const b=document.createElement('button');
+      b.className='ans'; b.textContent=v;
+      b.style.animationDelay=(i*.08)+'s';
+      b.onclick=()=>{ if(this.busy) return; sfxClick();
+        if(v===this.p.ans) this.right(); else this.wrongAns(b); };
+      box.appendChild(b);
+    });
+    if(SMOKE){
+      console.log('SMOKE answers='+box.childElementCount+' expr='+$('expr').textContent+' ans='+this.p.ans);
+      if(QP.get('noanswer')!=='1'){
+      const kids=[...box.children];
+      const good=kids.find(b=>b.textContent===String(this.p.ans));
+      const seq=(QP.get('wrong')==='1') ? [kids.find(b=>b!==good), good] : kids;
+      seq.forEach((b,i)=>setTimeout(()=>{ try{ b.click(); }catch(err){ console.log('SMOKE click-fail '+err); } }, 600+i*1300));
+      }
+    }
+  },
+  right(){
+    this.busy=true;
+    sfxRight();
+    say(pick(PRAISE)+' '+exprSpeak(this.p));   /* 夸奖之后把算式讲一遍：1加1等于2，一共2个小朋友 */
+    if(this.first){ this.got++; $('learnStars').textContent=this.got; starFly($('stage'),$('learnPill')); }
+    confetti(70);
+    /* 等"夸完+算式念完"整段语音真正结束再切题；14 秒看门狗防语音引擎不回调（冒烟 2.6 秒） */
+    let moved=false;
+    const go=()=>{ if(moved) return; moved=true;
+      this.timers.push(setTimeout(()=>this.next(),1200)); };
+    onVoiceIdle(go);
+    this.timers.push(setTimeout(go,SMOKE?2600:14000));
+  },
+  wrongAns(b){
+    if(b.classList.contains('think')) return;   /* 已变灰的按钮不再计次 */
+    this.first=false; this.wrong++;
+    sfxWrong();
+    b.classList.add('think'); void b.offsetWidth; b.classList.add('wrong-shake');
+    setTimeout(()=>b.classList.remove('wrong-shake'),500);
+    say(this.wrong>=2 ? (this.p.drag?'再仔细数一数圈圈里的小朋友～':'没关系，我们再看一遍慢动作～') : pick(RETRY));
+    if(this.wrong===2) this.replay(true);
+    if(this.wrong===3){
+      const good=[...$('answers').children].find(b=>!b.classList.contains('think')&&b.textContent===String(this.p.ans));
+      if(good) good.classList.add('hint');           /* 三次没对上就亮出正确按钮，孩子永不死磕 */
+      say('看看发光的那个，它就是我们要找的！');
+    }
+  },
+  replay(slow){
+    const p=this.p;
+    if(!p || (p.drag && activeDrag)) return;
+    this.clearTimers();
+    cancelSpeech();
+    activeDrag=null;
+    const answered=$('answers').childElementCount>0;
+    resizeStage();
+    const s=sceneFor(p);
+    scene=Object.assign(s,{t0:performance.now(),done:answered,nodo:answered});
+    if(slow) scene.dur*=1.8;
+    scene.t0=performance.now();
+    voiceScript(p).forEach(([tf,txt])=>{
+      if(tf===0){ say(txt); return; }
+      this.timers.push(setTimeout(()=>say(txt), tf*scene.dur));
+    });
+  },
+  next(){
+    this.idx=this.idx+1;
+    if(this.idx>=this.list.length) this.finish(); else this.load();
+  },
+  finish(){
+    const id=this.chap.id, st=this.got;
+    const firstClear=!S.cleared[id];
+    S.stars[id]=Math.max(S.stars[id]||0, st);
+    S.cleared[id]=true;
+    if(!S.badges.includes(id)) S.badges.push(id);
+    persist();
+    $('learnStars').textContent=totalStars();
+    const ds=$('doneStars'); ds.innerHTML='';
+    for(let i=0;i<MAX_PER_CHAP;i++){
+      const sp=document.createElement('span');
+      sp.textContent=i<st?'★':'☆';
+      sp.style.animationDelay=(i*.12)+'s';
+      ds.appendChild(sp);
+    }
+    $('doneBadge').textContent=firstClear?'🎖️'+this.chap.icon:'🌟';
+    $('doneOverlay').classList.add('on');
+    confetti(150);
+    say(firstClear?'哇！全部通关啦！你得到了新徽章，你是小小数学家！':'太棒啦！这一遍也玩完啦，再来一次会更厉害哦！');
+    if(SMOKE) console.log('SMOKE chapter-done id='+id+' stars='+st+'/6 firstClear='+firstClear);
+  }
+};
+$('btnBack').onclick=()=>{ sfxClick(); Learn.clearTimers(); showScreen('home'); };
+$('btnReplay').onclick=()=>{ sfxClick(); Learn.replay(false); };
+$('btnRetry').onclick=()=>{ sfxClick(); Learn.start(Learn.chap); };
+$('btnHome2').onclick=()=>{ sfxClick(); $('doneOverlay').classList.remove('on'); showScreen('home'); };
+
+/* ================= 首页 ================= */
+function renderHome(){
+  $('homeStars').textContent=totalStars();
+  const wrap=$('chapters'); wrap.innerHTML='';
+  CHAPTERS.forEach((ch,i)=>{
+    const un=chapUnlocked(i), st=S.stars[ch.id]||0;
+    const b=document.createElement('button');
+    b.className='chap'+(un?'':' locked');
+    b.style.animationDelay=(i*.06)+'s';
+    b.innerHTML=`<span class="chap-icon">${ch.icon}</span>${un?'':'<span class="chap-lock">🔒</span>'}<span class="chap-stars">${'★'.repeat(st)}${'☆'.repeat(MAX_PER_CHAP-st)}</span>`;
+    b.onclick=()=>{
+      sfxClick();
+      if(un){ Learn.start(ch); }
+      else { b.classList.add('shake'); setTimeout(()=>b.classList.remove('shake'),600); say('先把前面的关卡玩一玩吧～'); }
+    };
+    wrap.appendChild(b);
+  });
+  $('roomBadges').textContent='';
+}
+function renderPips(){
+  const box=$('pips'); if(!box) return;
+  box.innerHTML='';
+  for(let i=0;i<MAX_PER_CHAP;i++){
+    const d=document.createElement('span');
+    d.className='pip'+(i<Learn.idx?' done':i===Learn.idx?' cur':'');
+    box.appendChild(d);
+  }
+}
+/* 首页吉祥物 */
+const mc=$('mascot'), mctx=mc.getContext('2d');
+function drawMascot(now){
+  mctx.clearRect(0,0,240,192);
+  mctx.fillStyle='#CDEDD9'; mctx.beginPath(); mctx.ellipse(120,242,108,94,0,0,6.3); mctx.fill();
+  drawKid(mctx,120,150,1.9,{color:'#FF9F7F',wave:1,wave2:1,t:now/1000,hop:Math.abs(Math.sin(now/500))*7});
+  mctx.fillStyle='#FFAAA5';
+  for(let k=0;k<5;k++){ const a=k*1.256+now/1800; mctx.beginPath(); mctx.arc(46+Math.cos(a)*5,176+Math.sin(a)*5,3.4,0,6.3); mctx.fill(); }
+  mctx.fillStyle='#FFF3C4'; mctx.beginPath(); mctx.arc(46,176,3.2,0,6.3); mctx.fill();
+}
+
+/* ================= 3D 奖励屋 ================= */
+const SWATCH=['#FF9F7F','#7FC8F8','#9BD9A0','#C9A7F5','#F8C0D0'];
+const CDN3D=[
+  'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js',
+  'https://cdn.bootcdn.net/ajax/libs/three.js/0.160.0/three.module.js',
+  'https://unpkg.com/three@0.160.0/build/three.module.js',
+  'https://cdn.jsdmirror.com/npm/three@0.160.0/build/three.module.js'
+];
+async function loadThree(){
+  for(const u of CDN3D){ try{ return await import(u); }catch(e){} }
+  throw new Error('three load fail');
+}
+const Room={
+  obj:null, fail:false, raf:0,
+  async open(){
+    sfxClick();
+    showScreen('room');
+    this.swatches(); this.badges();
+    if(this.fail){ $('roomTip').textContent='🌐 联网打开就有 3D 火柴人哦'; return; }
+    if(!this.obj){
+      $('roomTip').textContent='加载中…';
+      try{ await this.init(); }
+      catch(e){ this.fail=true; this.css3d(); $('roomTip').textContent='🌐 联网打开就有 3D 火柴人哦'; return; }
+    }
+    $('roomTip').textContent='👆 拖一拖，转一转';
+    if(!S.roomSeen){ S.roomSeen=1; persist(); say('这是你的火柴人伙伴！拖一拖，转一转，还能给它换衣服～'); }
+    this.start();
+  },
+  async init(){
+    const THREE = await loadThree();
+    const holder=$('roomStage'); holder.innerHTML='';
+    const w=holder.clientWidth||300, h=holder.clientHeight||300;
+    const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+    renderer.setSize(w,h);
+    holder.appendChild(renderer.domElement);
+    const sc=new THREE.Scene();
+    const cam=new THREE.PerspectiveCamera(40,w/h,.1,100);
+    cam.position.set(0,1.75,5.4); cam.lookAt(0,1.15,0);
+    sc.add(new THREE.HemisphereLight(0xffffff,0xd8c8f0,.95));
+    const dl=new THREE.DirectionalLight(0xffffff,.7); dl.position.set(3,5,4); sc.add(dl);
+    const ground=new THREE.Mesh(new THREE.CircleGeometry(1.9,40),new THREE.MeshLambertMaterial({color:0xbfe8d8}));
+    ground.rotation.x=-Math.PI/2; sc.add(ground);
+    const bodyM=new THREE.MeshLambertMaterial({color:new THREE.Color(SWATCH[S.color||0])});
+    const skinM=new THREE.MeshLambertMaterial({color:0xfff1e6});
+    const inkM =new THREE.MeshLambertMaterial({color:0x5b4a42});
+    const hatM =new THREE.MeshLambertMaterial({color:0xd5aaff});
+    const R=(g,geo,mat,x,y,z)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);g.add(m);return m;};
+    const kid=new THREE.Group();
+    R(kid,new THREE.CapsuleGeometry(.09,.5,6,12),bodyM,-.17,.34,0);
+    R(kid,new THREE.CapsuleGeometry(.09,.5,6,12),bodyM, .17,.34,0);
+    R(kid,new THREE.CapsuleGeometry(.13,.62,6,12),bodyM,0,1.12,0);
+    R(kid,new THREE.SphereGeometry(.36,24,24),skinM,0,1.95,0);
+    R(kid,new THREE.SphereGeometry(.055,10,10),inkM,-.12,2.0,.31);
+    R(kid,new THREE.SphereGeometry(.055,10,10),inkM, .12,2.0,.31);
+    R(kid,new THREE.SphereGeometry(.07,10,10),bodyM,0,2.31,0);
+    const armL=new THREE.Group(); armL.position.set(-.34,1.5,0); kid.add(armL);
+    R(armL,new THREE.CapsuleGeometry(.075,.38,6,12),bodyM,0,-.26,0);
+    const armR=new THREE.Group(); armR.position.set(.34,1.5,0); kid.add(armR);
+    R(armR,new THREE.CapsuleGeometry(.075,.38,6,12),bodyM,0,-.26,0);
+    const hat=new THREE.Group(); hat.position.set(0,2.32,0); kid.add(hat);
+    R(hat,new THREE.CylinderGeometry(.26,.3,.05,20),hatM,0,0,0);
+    R(hat,new THREE.ConeGeometry(.17,.3,20),hatM,0,.17,0);
+    hat.visible=!!S.hat;
+    sc.add(kid);
+    let drag=null, idleAt=performance.now()+9000;
+    const el=renderer.domElement;
+    el.style.touchAction='none';
+    el.addEventListener('pointerdown',e=>{ drag={x:e.clientX,y:e.clientY}; el.setPointerCapture(e.pointerId); });
+    el.addEventListener('pointermove',e=>{ if(!drag) return;
+      kid.rotation.y+=(e.clientX-drag.x)*.01;
+      kid.rotation.x=clamp(kid.rotation.x+(e.clientY-drag.y)*.005,-.35,.5);
+      drag={x:e.clientX,y:e.clientY}; idleAt=performance.now()+9000; });
+    el.addEventListener('pointerup',()=>{ drag=null; });
+    const onResize=()=>{ const W=holder.clientWidth,H=holder.clientHeight;
+      if(W&&H){ renderer.setSize(W,H); cam.aspect=W/H; cam.updateProjectionMatrix(); } };
+    addEventListener('resize',onResize);
+    this.obj={THREE,renderer,sc,cam,kid,armL,armR,bodyM,hat,onResize,el};
+    const self=this;
+    this.obj.tick=n=>{
+      const o=self.obj; if(!o) return;
+      if(!drag && n>idleAt) o.kid.rotation.y+=.006;
+      const cyc=n%6000;
+      o.armR.rotation.z = cyc<1700 ? 2.4+Math.sin(n/80)*.35 : .5+Math.sin(n/900)*.12;
+      o.armL.rotation.z = -(cyc<1700&&cyc>850 ? 2.4+Math.sin(n/80+1)*.35 : .5+Math.sin(n/900+1)*.12);
+      o.kid.position.y=Math.abs(Math.sin(n/520))*.05;
+      o.renderer.render(o.sc,o.cam);
+    };
+  },
+  start(){ const o=this.obj; if(!o) return; this.stop(); const L=n=>{ o.tick(n); this.raf=requestAnimationFrame(L); }; this.raf=requestAnimationFrame(L); },
+  stop(){ if(this.raf){ cancelAnimationFrame(this.raf); this.raf=0; } },
+  swatches(){
+    const box=$('swatches'); if(box.childElementCount) return;
+    SWATCH.forEach((c,i)=>{
+      const b=document.createElement('button');
+      b.className='swatch'+(i===S.color?' on':''); b.style.background=c;
+      b.onclick=()=>{
+        sfxClick(); S.color=i; persist();
+        if(this.obj) this.obj.bodyM.color.set(new this.obj.THREE.Color(c));
+        say('换好啦，新衣服真漂亮！');
+        [...box.children].forEach((el,j)=>el.classList.toggle('on',j===i));
+      };
+      box.appendChild(b);
+    });
+  },
+  badges(){
+    $('roomBadges').textContent = S.badges.map(id=>(CHAPTERS.find(c=>c.id===id)||{}).icon||'').join('') + (S.badges.length?' 🎖':'');
+  },
+  css3d(){
+    const holder=$('roomStage');
+    holder.innerHTML='<div class="d3"><div class="fig"><div class="head"></div><div class="armL"></div><div class="armR"></div><div class="body"></div><div class="legL"></div><div class="legR"></div></div></div>'
+      +'<p class="room-note">🌐 联网打开就有 3D 火柴人哦</p>';
+  }
+};
+$('btnRoom').onclick=()=>Room.open();
+$('btnRoomBack').onclick=()=>{ sfxClick(); showScreen('home'); };
+$('btnHat').onclick=()=>{
+  sfxClick(); S.hat=!S.hat; persist();
+  if(Room.obj) Room.obj.hat.visible=!!S.hat;
+  $('btnHat').style.filter = S.hat?'':'grayscale(1)';
+  say(S.hat?'戴上帽子啦，帅气！':'帽子收起来啦～');
+};
+$('btnHat').style.filter = S.hat?'':'grayscale(1)';
+
+/* ================= 家长模式 ================= */
+function renderParent(){
+  const rows=CHAPTERS.map(ch=>{
+    const st=S.stars[ch.id]||0;
+    return `<div class="p-row"><span>${ch.icon}</span><span style="flex:1">${ch.name}</span>
+      <span class="p-stars">${'★'.repeat(st)}${'☆'.repeat(MAX_PER_CHAP-st)}</span>
+      <span>${S.cleared[ch.id]?'✅':'—'}</span></div>`;
+  }).join('');
+  $('parentBody').innerHTML=`
+    <div class="p-sec">⭐ 星星总数：${totalStars()} / ${CHAPTERS.length*MAX_PER_CHAP}</div>
+    ${rows}
+    <div class="p-sec">难度（影响数字范围）</div>
+    <div class="seg" id="lvSeg">
+      <button data-lv="easy"  class="${S.settings.level==='easy'?'on':''}">🙂 简单</button>
+      <button data-lv="normal" class="${S.settings.level==='normal'?'on':''}">😄 适中</button>
+      <button data-lv="hard"  class="${S.settings.level==='hard'?'on':''}">🔥 挑战(数字翻倍)</button>
+    </div>
+    <div class="p-sec">语音播报</div>
+    <div class="seg" id="voiceSeg"><button data-v="1" class="${S.settings.voice?'on':''}">开</button><button data-v="0" class="${!S.settings.voice?'on':''}">关</button></div>
+    <div class="p-sec">播报语速</div>
+    <div class="seg" id="rateSeg">
+      <button data-r="1.1" class="${(S.settings.rate||1.6)<1.3?'on':''}">🚶 稍慢</button>
+      <button data-r="1.6" class="${(S.settings.rate||1.6)>=1.3&&(S.settings.rate||1.6)<1.8?'on':''}">🏃 正常</button>
+      <button data-r="1.9" class="${(S.settings.rate||1.6)>=1.8?'on':''}">🚀 很快</button>
+    </div>
+    <div class="p-sec">动画里帮数（小人头顶报数字）</div>
+    <div class="seg" id="cntSeg">
+      <button data-c="help" class="${(S.settings.count||'help')!=='self'?'on':''}">🖐 帮数(每关前3题)</button>
+      <button data-c="self" class="${S.settings.count==='self'?'on':''}">🧮 自己数</button>
+    </div>
+    <div class="p-sec">音效</div>
+    <div class="seg" id="sfxSeg"><button data-v="1" class="${S.settings.sfx?'on':''}">开</button><button data-v="0" class="${!S.settings.sfx?'on':''}">关</button></div>
+    <button id="pReset" class="big-btn peach small-btn">🗑️ 重置全部进度</button>`;
+  $('lvSeg').onclick=e=>{ const v=e.target.dataset.lv; if(!v) return;
+    S.settings.level=v; persist(); sfxClick(); renderParent(); };
+  $('voiceSeg').onclick=e=>{ const v=e.target.dataset.v; if(v==null) return;
+    S.settings.voice=v==='1'; if(!S.settings.voice) cancelSpeech();
+    persist(); sfxClick(); renderParent(); };
+  $('rateSeg').onclick=e=>{ const r=e.target.dataset.r; if(!r) return;
+    S.settings.rate=parseFloat(r); persist(); sfxClick(); say('这个速度舒服吗？'); renderParent(); };
+  $('cntSeg').onclick=e=>{ const c=e.target.dataset.c; if(!c) return;
+    S.settings.count=c; persist(); sfxClick(); say(c==='self'?'好，让孩子们自己数！':'好，前面几题帮孩子数一数'); renderParent(); };
+  $('sfxSeg').onclick=e=>{ const v=e.target.dataset.v; if(v==null) return;
+    S.settings.sfx=v==='1'; if(S.settings.sfx) sfxClick(); persist(); renderParent(); };
+  let resetTap=0;
+  $('pReset').onclick=()=>{
+    const b=$('pReset');
+    if(Date.now()-resetTap<3000){        /* 3 秒内连点两下=确认，不用弹窗 */
+      resetTap=0;
+      S=defSave(); persist(); renderParent(); renderHome();
+      if(Room.obj) Room.obj.bodyM.color.set(new Room.obj.THREE.Color(SWATCH[0]));
+      sfxPop(); say('都清空啦，重新开始咯！');
+    } else {
+      resetTap=Date.now(); sfxClick();
+      b.textContent='⚠️ 再点一次就清空'; say('再点一下这个按钮就确定清空哦');
+      setTimeout(()=>{ if(Date.now()-resetTap>=2900 && b.isConnected) b.textContent='🗑️ 重置全部进度'; },3000);
+    }
+  };
+}
+/* 设置入口：单击即开（原先长按两秒，家长正常点击根本打不开） */
+function openParent(){ sfxClick(); renderParent(); $('parent').classList.add('on'); say('家长模式'); }
+$('btnGear').onclick=openParent;
+$('btnGearL').onclick=openParent;
+$('btnParentClose').onclick=()=>{ sfxClick(); $('parent').classList.remove('on'); };
+
+/* ================= 主循环 & 启动 ================= */
+function loop(now){
+  fxDraw();
+  if(cur==='learn') drawStage(now);
+  else if(cur==='home') drawMascot(now);
+  requestAnimationFrame(loop);
+}
+addEventListener('pointerdown',()=>{ ac();
+  /* iOS/Safari 需在用户手势里先碰一次语音队列，之后的 speak 才放行 */
+  if(speechOk){ try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u); }catch(e){} }
+  if(!S.welcomed){ S.welcomed=1; persist();
+    setTimeout(()=>{ if(cur==='home'&&!Learn.chap) say('欢迎来到数学乐园！点一个关卡，和小人一起玩吧～'); },900); }
+},{once:true});
+renderHome();
+/* 调试/预览直达：?demo=关卡id 自动进入（如 ?demo=add5） */
+try{
+  const demo=new URLSearchParams(location.search).get('demo');
+  const ch=demo&&CHAPTERS.find(c=>c.id===demo);
+  if(ch) setTimeout(()=>Learn.start(ch),800);
+}catch(e){}
+requestAnimationFrame(loop);
+if(SMOKE){
+  /* 冒烟驱动：无头浏览器 rAF 不出帧，用定时器手动推进舞台动画（仅 smoke=1 生效） */
+  setInterval(()=>{ try{ if(cur==='learn') drawStage(performance.now()); }catch(e){ console.log('SMOKE loop-fail '+e); } }, 50);
+  if(QP.get('parent')==='1'){
+    setTimeout(()=>{ $('btnGear').click(); console.log('SMOKE parent-open='+$('parent').classList.contains('on')); },300);
+    setTimeout(()=>{
+      try{
+        $('lvSeg').querySelector('[data-lv="easy"]').click();
+        console.log('SMOKE level-click->'+S.settings.level);
+        $('voiceSeg').querySelector('[data-v="0"]').click();
+        console.log('SMOKE voice-off->'+S.settings.voice);
+        $('rateSeg').querySelector('[data-r="1.1"]').click();
+        console.log('SMOKE rate->'+S.settings.rate);
+        $('cntSeg').querySelector('[data-c="self"]').click();
+        console.log('SMOKE count->'+S.settings.count+' kidNums='+kidNums({ramp:0}));
+        const rb=$('pReset'); rb.click();          /* 第一下=进入确认态 */
+        const armed=rb.textContent.includes('再点');
+        rb.click();                                 /* 第二下=确认清空 */
+        console.log('SMOKE reset armed='+armed+' stars='+totalStars());
+        $('btnParentClose').click();
+        console.log('SMOKE parent-close='+!$('parent').classList.contains('on'));
+      }catch(e){ console.log('SMOKE parent-fail '+e); }
+    },900);
+  }
+}
+</script>
+</body>
+</html>
