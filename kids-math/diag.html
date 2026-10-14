@@ -3,76 +3,61 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>语音包链路诊断 v2 · 数学乐园</title>
+<title>诊断 v3 · WAV链路+网页版本</title>
 <style>
   body{font-family:-apple-system,sans-serif;background:#FFF9F0;color:#5A4A42;margin:0;padding:14px;font-size:15px;line-height:1.7}
-  h1{font-size:19px}
-  .btn{display:block;width:100%;margin:10px 0;padding:15px;font-size:17px;font-weight:700;color:#fff;border:none;border-radius:14px;box-shadow:0 5px 0 rgba(0,0,0,.08)}
+  h1{font-size:18px}
+  .btn{display:block;width:100%;margin:10px 0;padding:15px;font-size:16px;font-weight:700;color:#fff;border:none;border-radius:14px;box-shadow:0 5px 0 rgba(0,0,0,.08)}
   .b1{background:#79B8D9}.b2{background:#C9A7F5}.b3{background:#8FCB9B}
-  #log{background:#fff;border-radius:12px;padding:10px 12px;white-space:pre-wrap;word-break:break-all;font-size:13px;min-height:200px;box-shadow:0 3px 10px rgba(0,0,0,.05)}
-  .tip{background:#FFF1D6;border-radius:12px;padding:10px 12px;font-size:13px}
+  #ver{background:#E8F4E8;border-radius:12px;padding:10px 12px;margin:8px 0}
+  #log{background:#fff;border-radius:12px;padding:10px 12px;white-space:pre-wrap;word-break:break-all;font-size:13px;min-height:170px;box-shadow:0 3px 10px rgba(0,0,0,.05)}
 </style>
 </head>
 <body>
-<h1>🔊 语音包链路诊断 v2</h1>
-<div>按顺序点 <b>①→②→③</b>，把整个屏幕截图发回来。</div>
-<button class="btn b1" id="p1">① 探针：播放语音包（应听到"太棒啦"）</button>
-<button class="btn b2" id="p2">② 探针：audio 标签播同一个文件</button>
-<button class="btn b3" id="p3">③ 探针：音效"叮"</button>
-<div class="tip" style="margin:8px 0">先检查手机：媒体音量已开？华为/苹果侧边静音开关没拨到静音？</div>
-<div id="env"></div>
+<h1>🔊 诊断 v3（自动运行，完事截图）</h1>
+<div id="ver">正在检测你这台设备拿到的应用版本…</div>
+<button class="btn b1" id="p1">① 点这里播放测试音"太棒啦"</button>
+<button class="btn b3" id="p3">③ 音效"叮"</button>
 <div id="log"></div>
 <script>
-const L=s=>{const d=document.getElementById('log');d.textContent+=s+'\n';d.scrollTop=1e9;console.log('DIAG '+s);};
-const FILE='audio/l8n1kw.mp3';
-const chrome=(navigator.userAgent.match(/Chrome\/[\d.]+/)||['未知内核'])[0];
-document.getElementById('env').textContent='内核: '+chrome+' | speechSynthesis: '+('speechSynthesis' in window)+' | AudioContext: '+!!(window.AudioContext||window.webkitAudioContext);
-let AC=null; const ac=()=>AC||(AC=new (window.AudioContext||window.webkitAudioContext)());
-let t0=0; const T=()=>Math.round(performance.now()-t0)+'ms';
-
-document.getElementById('p1').onclick=async()=>{
-  t0=performance.now(); L('———— 探针① WebAudio 全链路 ————');
+const L=s=>{const d=document.getElementById('log');d.textContent+=s+'\n';d.scrollTop=1e9;};
+const FILE='audio2/l8n1kw.wav';
+const ac=window.AudioContext||window.webkitAudioContext;
+let AC=null; const getAC=()=>AC||(AC=new ac());
+L('内核: '+(navigator.userAgent.match(/Chrome\/[\d.]+/)||['?'])[0]+' | speechSynthesis: '+('speechSynthesis' in window));
+fetch('index.html?ts='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(t=>{
+  const m=t.match(/id="verTag"[^>]*>([^<]+)/);
+  document.getElementById('ver').textContent='设备当前拿到的应用: '+(m?m[1]:'老缓存版（没有版本角标）')+' —— 主页左下角也应显示同样角标';
+}).catch(e=>{document.getElementById('ver').textContent='应用版本检测失败: '+e;});
+async function probe(){
+  L('— 探针: fetch '+FILE+' —');
   try{
-    L('1. fetch '+FILE+' …');
-    const r=await fetch(FILE);
-    L('2. HTTP '+r.status+(r.ok?' ✔':'')+' type='+r.type+' len='+r.headers.get('content-length'));
-    if(!r.ok){L('❌ 停在 fetch: 状态 '+r.status);return;}
+    const r=await fetch(FILE,{cache:'no-store'});
+    L('1. HTTP '+r.status+' len='+(r.headers.get('content-length')||'?'));
+    if(!r.ok) return L('❌ 文件取不到');
     const ab=await r.arrayBuffer();
-    L('3. arrayBuffer '+ab.byteLength+' 字节 '+(ab.byteLength>500?'✔':'⚠太小'));
-    const c=ac();
-    L('4. AudioContext state='+c.state+' rate='+c.sampleRate);
-    if(c.state==='suspended'){ await c.resume().catch(e=>L('resume失败:'+e)); L('   resume后 state='+c.state); }
-    L('5. 解码 mp3 …');
-    let buf=null;
-    try{ buf=await c.decodeAudioData(ab); }
-    catch(e){ L('   Promise解码失败: '+e+' → 试老版回调式'); buf=await new Promise((ok,no)=>c.decodeAudioData(ab,ok,no)); }
-    L('6. 解码成功 dur='+buf.duration.toFixed(2)+'s ch='+buf.numberOfChannels+' ✔');
+    L('2. '+ab.byteLength+' 字节');
+    const c=getAC();
+    if(c.state==='suspended'){ try{ await c.resume(); }catch(e){} }
+    L('3. AudioContext '+c.state);
+    L('4. 解码 WAV …');
+    const buf=await c.decodeAudioData(ab.slice(0));
+    L('5. 解码成功 dur='+buf.duration.toFixed(2)+'s ✔（如果①点了还没声音=输出路由问题）');
     const s=c.createBufferSource(); s.buffer=buf; s.connect(c.destination);
-    s.onended=()=>L('8. onended 播完（如果刚才听到了"太棒啦"，语音包链路完全正常 → 截图发回）');
+    s.onended=()=>L('6. 播完了（听到了吗？）');
     s.start(0);
-    L('7. start(0) 已调用 state='+c.state);
-  }catch(e){ L('❌ 异常: '+(e&&e.message||e)); }
-};
-document.getElementById('p2').onclick=()=>{
-  L('———— 探针② audio 标签 ————');
-  const a=new Audio(FILE);
-  a.onended=()=>L('   audio标签: onended 播完');
-  a.onerror=()=>L('   audio标签: onerror（该文件/格式解码失败）');
-  const p=a.play();
-  if(p) p.then(()=>L('   audio标签: play() 成功（没听到=输出问题）')).catch(e=>L('   audio标签: play() 被拒: '+e.name+' — '+(e.message||'')));
-  else L('   audio标签: 无 play promise');
-};
-document.getElementById('p3').onclick=()=>{
-  L('———— 探针③ WebAudio 音效 ————');
-  try{
-    const c=ac(); if(c.state==='suspended') c.resume();
-    const o=c.createOscillator(),g=c.createGain();
-    o.connect(g); g.connect(c.destination); o.frequency.value=880; g.gain.value=.3;
-    o.start(); o.stop(c.currentTime+.4);
-    L('   已弹"叮" state='+c.state+'（应能听到）');
-  }catch(e){ L('   音效失败: '+e); }
-};
-L('等待操作…');
+    L('>> start() 已调用: '+'太棒啦！应已播出');
+  }catch(e){ L('❌ '+(e&&e.name)+': '+(e&&e.message||e)); }
+}
+document.getElementById('p1').onclick=probe;
+fetch(FILE+'?auto=1',{cache:'no-store'}).then(r=>r.arrayBuffer()).then(async ab=>{
+  L('[自动] 文件 '+ab.byteLength+'B 抓取OK，自动试解码（不含播放）…');
+  try{ const c=getAC(); const buf=await c.decodeAudioData(ab); L('[自动] WAV 解码成功 ✔ '+buf.duration.toFixed(2)+'s —— 内核没问题'); }
+  catch(e){ L('[自动] ❌ 解码失败: '+(e&&e.name)+': '+(e&&e.message||e)); }
+}).catch(e=>L('[自动] 文件抓取失败: '+e));
+document.getElementById('p3').onclick=()=>{ try{ const c=getAC(); if(c.state==='suspended')c.resume();
+  const o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.value=880; g.gain.value=.3; o.start(); o.stop(c.currentTime+.4);
+  L('[音效] 叮 已弹 state='+c.state); }catch(e){ L('[音效] '+e); } };
 </script>
 </body>
 </html>
