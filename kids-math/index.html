@@ -288,16 +288,41 @@ function fnv36(s){
   return out;
 }
 let curClip=null;
+/* 语音包播放：fetch+decodeAudioData+BufferSource（WebAudio 通道），失败退 audio 标签 */
+const clipBuf = {};
+function playClip(txt, fin){
+  const url = 'audio/'+fnv36(txt)+'.mp3';
+  const play = (buf)=>{
+    const ctx = ac();
+    if(!ctx){ audioFallback(url, fin); return; }
+    if(ctx.state==='suspended'){ try{ ctx.resume(); }catch(e){} }
+    const s = ctx.createBufferSource(); s.buffer = buf; s.connect(ctx.destination);
+    let done=false;
+    const end = ()=>{ if(done) return; done=true; if(curClip&&curClip.src===s) curClip=null; fin(); };
+    s.onended = end;
+    curClip = { src:s, stop(){ done=true; try{ s.onended=null; s.stop(0); }catch(e){ } curClip=null; } };
+    try{ s.start(0); }catch(e){ end(); }
+  };
+  if(clipBuf[url]) return play(clipBuf[url]);
+  fetch(url).then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(ab=>{ const c=ac(); if(!c) throw new Error('noac'); return c.decodeAudioData(ab); })
+    .then(buf=>{ clipBuf[url]=buf; play(buf); })
+    .catch(()=>audioFallback(url, fin));
+}
+function audioFallback(url, fin){
+  const a=new Audio(url); let done=false;
+  const end=()=>{ if(done) return; done=true; if(curClip&&curClip.el===a) curClip=null; fin(); };
+  curClip = { el:a, stop(){ done=true; try{ a.pause(); }catch(e){} curClip=null; } };
+  a.onended=end; a.onerror=end;
+  a.play().catch(()=>setTimeout(()=>a.play().catch(end), 350));
+}
 function pumpVoice(){
   if(voiceBusy || !voiceQ.length) return;
   const txt = voiceQ.shift();
   if(!speechOk){
-    /* 内置语音包模式：audio/<句子哈希>.mp3（gen_clips.py 用 edge-tts 小晓合成） */
+    /* 内置语音包模式：WebAudio 播 audio/<句子哈希>.mp3（华为内核禁非手势的 audio.play，走解码通道） */
     voiceBusy = true;
-    const a = new Audio('audio/'+fnv36(txt)+'.mp3'); curClip = a;
-    const fin = ()=>{ if(curClip!==a) return; curClip=null; voiceBusy=false; pumpVoice(); drainVoiceIdle(); };
-    a.onended = fin; a.onerror = fin;
-    a.play().catch(fin);
+    playClip(txt, ()=>{ voiceBusy=false; if(speechOk) return; pumpVoice(); drainVoiceIdle(); });
     return;
   }
   /* 部分国产内核（含华为浏览器）cancel 后紧跟的 speak 会被静默吞掉，错开 80ms */
@@ -312,7 +337,7 @@ function pumpVoice(){
     speechSynthesis.speak(u);
   }catch(e){ voiceBusy=false; drainVoiceIdle(); }
 }
-function cancelSpeech(){ voiceQ.length=0; voiceBusy=false; if(curClip){ const c=curClip; curClip=null; try{ c.pause(); }catch(e){} } lastCancel=Date.now(); try{ speechSynthesis.cancel(); }catch(e){} drainVoiceIdle(); }
+function cancelSpeech(){ voiceQ.length=0; voiceBusy=false; const c=curClip; if(c){ curClip=null; try{ c.stop(); }catch(e){} } lastCancel=Date.now(); try{ speechSynthesis.cancel(); }catch(e){} drainVoiceIdle(); }
 let lastCancel = 0;
 /* Chromium 长语音 15 秒自动暂停 bug 的保活 */
 setInterval(()=>{ try{ if(speechOk && speechSynthesis.speaking && !speechSynthesis.paused) speechSynthesis.resume(); }catch(e){} }, 9000);
