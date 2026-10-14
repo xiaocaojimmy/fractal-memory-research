@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>语音诊断 · 数学乐园</title>
+<style>
+  body{font-family:-apple-system,sans-serif;background:#FFF9F0;color:#5A4A42;margin:0;padding:14px;font-size:15px;line-height:1.7}
+  h1{font-size:19px}
+  .btn{display:block;width:100%;margin:10px 0;padding:16px;font-size:18px;font-weight:700;color:#fff;background:#79B8D9;border:none;border-radius:14px;box-shadow:0 5px 0 rgba(0,0,0,.08)}
+  .btn.b2{background:#8FCB9B}
+  #log{background:#fff;border-radius:12px;padding:10px 12px;white-space:pre-wrap;word-break:break-all;font-size:13px;min-height:150px;box-shadow:0 3px 10px rgba(0,0,0,.05)}
+  .tip{background:#FFF1D6;border-radius:12px;padding:10px 12px;font-size:13px}
+</style>
+</head>
+<body>
+<h1>🔊 语音诊断</h1>
+<div>按下面步骤点一遍，把屏幕<b>截图发给技术的人</b>即可。</div>
+<button class="btn" id="speakBtn">① 点我：念"小朋友你好"</button>
+<button class="btn b2" id="beepBtn">② 点我：听"叮"一声</button>
+<div class="tip" style="margin:8px 0">先检查手机：媒体音量已开？华为/苹果侧边静音开关没拨到静音？</div>
+<div id="env"></div>
+<div id="log"></div>
+<script>
+const L=(s)=>{const d=document.getElementById('log');d.textContent=Date.now()%100000+': '+s+'\n'+d.textContent;};
+const env=document.getElementById('env');
+const ua=navigator.userAgent.match(/(HuaweiBrowser|HWBrowser|Chrome|Mozilla)[^;)]*/g);
+env.textContent='浏览器: '+(ua?ua[0]:'未知')+' | speechSynthesis: '+('speechSynthesis' in window)+' | Utterance: '+('SpeechSynthesisUtterance' in window);
+let vc=0,vs=[];
+try{ vs=speechSynthesis.getVoices(); }catch(e){ L('getVoices异常 '+e); }
+if(vs.length && vs.length!==vc){ vc=vs.length; env.textContent+=' | 语音人:'+vs.length+'个 ['+vs.slice(0,4).map(v=>v.name).join(', ')+']'; L('获取到 '+vs.length+' 个语音人'); }
+document.getElementById('speakBtn').onclick=()=>{
+  L('— 点击"念一句" —');
+  if(!('speechSynthesis' in window)){ L('❌ 本浏览器没有语音接口'); return; }
+  try{ speechSynthesis.cancel(); }catch(e){}
+  setTimeout(()=>{
+    try{
+      const u=new SpeechSynthesisUtterance('小朋友，你好呀');
+      u.lang='zh-CN'; u.rate=1.4; u.pitch=1.3;
+      const vs2=speechSynthesis.getVoices()||[];
+      L('getVoices()='+vs2.length+(vs2.length?' ['+vs2.slice(0,3).map(v=>v.name+'/'+v.lang).join(', ')+']':''));
+      if(vs2.length){ const zh=vs2.find(v=>/^zh/i.test(v.lang))||null; if(zh)u.voice=zh; L(zh?('选用:'+zh.name):'没有中文语音人,用默认'); }
+      u.onstart=()=>L('✅ onstart 开始发声');
+      u.onend=()=>L('✅ onend 完整念完');
+      u.onerror=(e)=>L('❌ onerror: '+e.error);
+      u.onboundary=(e)=>{ if(!window._b){window._b=1;L('边界事件(在读了)');} };
+      speechSynthesis.speak(u);
+      setTimeout(()=>L('2秒后: speaking='+speechSynthesis.speaking+' pending='+speechSynthesis.pending+' (若false且没看到✅/❌=被吞)'),2000);
+    }catch(e){ L('❌ 抛异常: '+e); }
+  },100);
+};
+document.getElementById('beepBtn').onclick=()=>{
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext; const ac=new AC();
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.connect(g); g.connect(ac.destination); o.frequency.value=880; g.gain.value=.3;
+    o.start(); o.stop(ac.currentTime+.4);
+    L('音效已播 (state='+ac.state+')，若没听到=媒体音量问题');
+  }catch(e){ L('音效失败 '+e); }
+};
+L('等待操作…（页面打开'+Math.round(performance.now()/1000)+'秒时语音人='+vs.length+'个）');
+setTimeout(()=>{ try{ const v2=speechSynthesis?speechSynthesis.getVoices():[]; if(v2.length!==vc){ vc=v2.length; L('稍后获取到 '+vc+' 个语音人'); } }catch(e){} },3000);
+</script>
+</body>
+</html>
