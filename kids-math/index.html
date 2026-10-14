@@ -282,6 +282,8 @@ function say(txt){
 }
 function pumpVoice(){
   if(voiceBusy || !voiceQ.length) return;
+  /* 部分国产内核（含华为浏览器）cancel 后紧跟的 speak 会被静默吞掉，错开 80ms */
+  if(Date.now()-lastCancel<80){ setTimeout(pumpVoice,80); return; }
   const txt = voiceQ.shift();
   try{
     const u = new SpeechSynthesisUtterance(txt);
@@ -293,7 +295,8 @@ function pumpVoice(){
     speechSynthesis.speak(u);
   }catch(e){ voiceBusy=false; drainVoiceIdle(); }
 }
-function cancelSpeech(){ voiceQ.length=0; voiceBusy=false; try{ speechSynthesis.cancel(); }catch(e){} drainVoiceIdle(); }
+function cancelSpeech(){ voiceQ.length=0; voiceBusy=false; lastCancel=Date.now(); try{ speechSynthesis.cancel(); }catch(e){} drainVoiceIdle(); }
+let lastCancel = 0;
 /* Chromium 长语音 15 秒自动暂停 bug 的保活 */
 setInterval(()=>{ try{ if(speechOk && speechSynthesis.speaking && !speechSynthesis.paused) speechSynthesis.resume(); }catch(e){} }, 9000);
 
