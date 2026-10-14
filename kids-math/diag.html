@@ -3,63 +3,76 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>语音诊断 · 数学乐园</title>
+<title>语音包链路诊断 v2 · 数学乐园</title>
 <style>
   body{font-family:-apple-system,sans-serif;background:#FFF9F0;color:#5A4A42;margin:0;padding:14px;font-size:15px;line-height:1.7}
   h1{font-size:19px}
-  .btn{display:block;width:100%;margin:10px 0;padding:16px;font-size:18px;font-weight:700;color:#fff;background:#79B8D9;border:none;border-radius:14px;box-shadow:0 5px 0 rgba(0,0,0,.08)}
-  .btn.b2{background:#8FCB9B}
-  #log{background:#fff;border-radius:12px;padding:10px 12px;white-space:pre-wrap;word-break:break-all;font-size:13px;min-height:150px;box-shadow:0 3px 10px rgba(0,0,0,.05)}
+  .btn{display:block;width:100%;margin:10px 0;padding:15px;font-size:17px;font-weight:700;color:#fff;border:none;border-radius:14px;box-shadow:0 5px 0 rgba(0,0,0,.08)}
+  .b1{background:#79B8D9}.b2{background:#C9A7F5}.b3{background:#8FCB9B}
+  #log{background:#fff;border-radius:12px;padding:10px 12px;white-space:pre-wrap;word-break:break-all;font-size:13px;min-height:200px;box-shadow:0 3px 10px rgba(0,0,0,.05)}
   .tip{background:#FFF1D6;border-radius:12px;padding:10px 12px;font-size:13px}
 </style>
 </head>
 <body>
-<h1>🔊 语音诊断</h1>
-<div>按下面步骤点一遍，把屏幕<b>截图发给技术的人</b>即可。</div>
-<button class="btn" id="speakBtn">① 点我：念"小朋友你好"</button>
-<button class="btn b2" id="beepBtn">② 点我：听"叮"一声</button>
+<h1>🔊 语音包链路诊断 v2</h1>
+<div>按顺序点 <b>①→②→③</b>，把整个屏幕截图发回来。</div>
+<button class="btn b1" id="p1">① 探针：播放语音包（应听到"太棒啦"）</button>
+<button class="btn b2" id="p2">② 探针：audio 标签播同一个文件</button>
+<button class="btn b3" id="p3">③ 探针：音效"叮"</button>
 <div class="tip" style="margin:8px 0">先检查手机：媒体音量已开？华为/苹果侧边静音开关没拨到静音？</div>
 <div id="env"></div>
 <div id="log"></div>
 <script>
-const L=(s)=>{const d=document.getElementById('log');d.textContent=Date.now()%100000+': '+s+'\n'+d.textContent;};
-const env=document.getElementById('env');
-const ua=navigator.userAgent.match(/(HuaweiBrowser|HWBrowser|Chrome|Mozilla)[^;)]*/g);
-env.textContent='浏览器: '+(ua?ua[0]:'未知')+' | speechSynthesis: '+('speechSynthesis' in window)+' | Utterance: '+('SpeechSynthesisUtterance' in window);
-let vc=0,vs=[];
-try{ vs=speechSynthesis.getVoices(); }catch(e){ L('getVoices异常 '+e); }
-if(vs.length && vs.length!==vc){ vc=vs.length; env.textContent+=' | 语音人:'+vs.length+'个 ['+vs.slice(0,4).map(v=>v.name).join(', ')+']'; L('获取到 '+vs.length+' 个语音人'); }
-document.getElementById('speakBtn').onclick=()=>{
-  L('— 点击"念一句" —');
-  if(!('speechSynthesis' in window)){ L('❌ 本浏览器没有语音接口'); return; }
-  try{ speechSynthesis.cancel(); }catch(e){}
-  setTimeout(()=>{
-    try{
-      const u=new SpeechSynthesisUtterance('小朋友，你好呀');
-      u.lang='zh-CN'; u.rate=1.4; u.pitch=1.3;
-      const vs2=speechSynthesis.getVoices()||[];
-      L('getVoices()='+vs2.length+(vs2.length?' ['+vs2.slice(0,3).map(v=>v.name+'/'+v.lang).join(', ')+']':''));
-      if(vs2.length){ const zh=vs2.find(v=>/^zh/i.test(v.lang))||null; if(zh)u.voice=zh; L(zh?('选用:'+zh.name):'没有中文语音人,用默认'); }
-      u.onstart=()=>L('✅ onstart 开始发声');
-      u.onend=()=>L('✅ onend 完整念完');
-      u.onerror=(e)=>L('❌ onerror: '+e.error);
-      u.onboundary=(e)=>{ if(!window._b){window._b=1;L('边界事件(在读了)');} };
-      speechSynthesis.speak(u);
-      setTimeout(()=>L('2秒后: speaking='+speechSynthesis.speaking+' pending='+speechSynthesis.pending+' (若false且没看到✅/❌=被吞)'),2000);
-    }catch(e){ L('❌ 抛异常: '+e); }
-  },100);
-};
-document.getElementById('beepBtn').onclick=()=>{
+const L=s=>{const d=document.getElementById('log');d.textContent+=s+'\n';d.scrollTop=1e9;console.log('DIAG '+s);};
+const FILE='audio/l8n1kw.mp3';
+const chrome=(navigator.userAgent.match(/Chrome\/[\d.]+/)||['未知内核'])[0];
+document.getElementById('env').textContent='内核: '+chrome+' | speechSynthesis: '+('speechSynthesis' in window)+' | AudioContext: '+!!(window.AudioContext||window.webkitAudioContext);
+let AC=null; const ac=()=>AC||(AC=new (window.AudioContext||window.webkitAudioContext)());
+let t0=0; const T=()=>Math.round(performance.now()-t0)+'ms';
+
+document.getElementById('p1').onclick=async()=>{
+  t0=performance.now(); L('———— 探针① WebAudio 全链路 ————');
   try{
-    const AC=window.AudioContext||window.webkitAudioContext; const ac=new AC();
-    const o=ac.createOscillator(),g=ac.createGain();
-    o.connect(g); g.connect(ac.destination); o.frequency.value=880; g.gain.value=.3;
-    o.start(); o.stop(ac.currentTime+.4);
-    L('音效已播 (state='+ac.state+')，若没听到=媒体音量问题');
-  }catch(e){ L('音效失败 '+e); }
+    L('1. fetch '+FILE+' …');
+    const r=await fetch(FILE);
+    L('2. HTTP '+r.status+(r.ok?' ✔':'')+' type='+r.type+' len='+r.headers.get('content-length'));
+    if(!r.ok){L('❌ 停在 fetch: 状态 '+r.status);return;}
+    const ab=await r.arrayBuffer();
+    L('3. arrayBuffer '+ab.byteLength+' 字节 '+(ab.byteLength>500?'✔':'⚠太小'));
+    const c=ac();
+    L('4. AudioContext state='+c.state+' rate='+c.sampleRate);
+    if(c.state==='suspended'){ await c.resume().catch(e=>L('resume失败:'+e)); L('   resume后 state='+c.state); }
+    L('5. 解码 mp3 …');
+    let buf=null;
+    try{ buf=await c.decodeAudioData(ab); }
+    catch(e){ L('   Promise解码失败: '+e+' → 试老版回调式'); buf=await new Promise((ok,no)=>c.decodeAudioData(ab,ok,no)); }
+    L('6. 解码成功 dur='+buf.duration.toFixed(2)+'s ch='+buf.numberOfChannels+' ✔');
+    const s=c.createBufferSource(); s.buffer=buf; s.connect(c.destination);
+    s.onended=()=>L('8. onended 播完（如果刚才听到了"太棒啦"，语音包链路完全正常 → 截图发回）');
+    s.start(0);
+    L('7. start(0) 已调用 state='+c.state);
+  }catch(e){ L('❌ 异常: '+(e&&e.message||e)); }
 };
-L('等待操作…（页面打开'+Math.round(performance.now()/1000)+'秒时语音人='+vs.length+'个）');
-setTimeout(()=>{ try{ const v2=speechSynthesis?speechSynthesis.getVoices():[]; if(v2.length!==vc){ vc=v2.length; L('稍后获取到 '+vc+' 个语音人'); } }catch(e){} },3000);
+document.getElementById('p2').onclick=()=>{
+  L('———— 探针② audio 标签 ————');
+  const a=new Audio(FILE);
+  a.onended=()=>L('   audio标签: onended 播完');
+  a.onerror=()=>L('   audio标签: onerror（该文件/格式解码失败）');
+  const p=a.play();
+  if(p) p.then(()=>L('   audio标签: play() 成功（没听到=输出问题）')).catch(e=>L('   audio标签: play() 被拒: '+e.name+' — '+(e.message||'')));
+  else L('   audio标签: 无 play promise');
+};
+document.getElementById('p3').onclick=()=>{
+  L('———— 探针③ WebAudio 音效 ————');
+  try{
+    const c=ac(); if(c.state==='suspended') c.resume();
+    const o=c.createOscillator(),g=c.createGain();
+    o.connect(g); g.connect(c.destination); o.frequency.value=880; g.gain.value=.3;
+    o.start(); o.stop(c.currentTime+.4);
+    L('   已弹"叮" state='+c.state+'（应能听到）');
+  }catch(e){ L('   音效失败: '+e); }
+};
+L('等待操作…');
 </script>
 </body>
 </html>
