@@ -145,7 +145,7 @@ button{font-family:inherit;border:none;cursor:pointer;color:var(--ink);}
 </style>
 </head>
 <body>
-<div id="verTag" style="position:fixed;left:10px;bottom:6px;z-index:60;color:#bfb7ab;font-size:11px;pointer-events:none;user-select:none">v14·art</div>
+<div id="verTag" style="position:fixed;left:10px;bottom:6px;z-index:60;color:#bfb7ab;font-size:11px;pointer-events:none;user-select:none">v14·pre</div>
 
 <!-- 首页 -->
 <div id="home" class="screen on">
@@ -316,6 +316,16 @@ function audioFallback(url, fin){
   curClip = { el:a, stop(){ done=true; try{ a.pause(); }catch(e){} curClip=null; } };
   a.onended=end; a.onerror=end;
   a.play().catch(()=>setTimeout(()=>a.play().catch(end), 350));
+}
+/* 提前下载解码将要念的句子：夸奖后那句算式是每题新台词，现下现放会空等 1-2 秒 */
+function preloadVoice(txt){
+  if(speechOk || !txt) return;
+  const url = 'audio2/'+fnv36(txt)+'.wav';
+  if(clipBuf[url]) return;
+  fetch(url).then(r=>{ if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(ab=>{ const c=ac(); if(!c) throw new Error('noac'); return c.decodeAudioData(ab); })
+    .then(buf=>{ clipBuf[url]=buf; })
+    .catch(()=>{});
 }
 function pumpVoice(){
   if(voiceBusy || !voiceQ.length) return;
@@ -977,6 +987,8 @@ const Learn = {
     renderPips(this.idx);
     scene=sceneFor(p);
     scene.t0=performance.now(); scene.done=false;
+    preloadVoice(exprSpeak(p));                                  /* 动画期间把本题算式语音备好，答完秒接下一句 */
+    if(this.list[this.idx+1]) preloadVoice(exprSpeak(this.list[this.idx+1]));
     const voiceDur = p.drag ? 3600 : scene.dur;   /* 拖拽题没有动画时长，按固定节奏播 */
     voiceScript(p).forEach(([tf,txt])=>{
       if(tf===0){ say(txt); return; }             /* 第一句在点击事件里同步播出，防 iOS 丢异步语音 */
