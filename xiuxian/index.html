@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>问道长生 · 修仙 2D</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0c14;
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif; user-select: none; }
+  #game { display: block; position: absolute; inset: 0; cursor: crosshair; }
+  #minimap { position: absolute; right: 14px; top: 14px; background: rgba(10,14,26,0.72);
+    border: 1px solid rgba(140,180,255,0.25); border-radius: 6px; }
+  #logbox { position: absolute; left: 14px; bottom: 14px; max-width: 560px; pointer-events: none; }
+  .logline { color: #cfd6e8; font-size: 13px; margin-top: 3px; text-shadow: 0 1px 2px #000;
+    opacity: 0.95; transition: opacity 1s; }
+  .logline.fade { opacity: 0.25; }
+  #toasts { position: absolute; top: 64px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; z-index: 30; }
+  .toast { background: rgba(18,24,44,0.92); color: #ffe28a; padding: 8px 22px; border-radius: 20px;
+    font-size: 14px; border: 1px solid rgba(255,226,138,0.35); animation: pop .25s ease-out;
+    max-width: 80vw; }
+  .toast.bad { color: #ff9a8a; border-color: rgba(255,120,90,0.4); }
+  .toast.gold { color: #ffd76a; border-color: rgba(255,200,80,0.6); box-shadow: 0 0 18px rgba(255,200,80,0.25); }
+  @keyframes pop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  /* ---- 面板 ---- */
+  #mask { position: absolute; inset: 0; background: rgba(4,6,14,0.55); z-index: 40; }
+  .panel { position: absolute; z-index: 41; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    width: min(880px, 94vw); max-height: 86vh; overflow-y: auto;
+    background: linear-gradient(180deg, #131a30, #0e1322); border: 1px solid rgba(140,180,255,0.28);
+    border-radius: 12px; padding: 18px 22px; color: #dfe6f5; box-shadow: 0 10px 50px rgba(0,0,0,0.6); }
+  .panel h2 { font-size: 18px; color: #ffe28a; margin-bottom: 12px; letter-spacing: 2px;
+    border-bottom: 1px solid rgba(255,226,138,0.2); padding-bottom: 8px; }
+  .panel h4 { color: #9ab8ff; font-size: 13px; margin: 10px 0 6px; }
+  .hidden { display: none !important; }
+  .gold { color: #ffd76a; } .idesc { color: #8a94ac; font-size: 12px; }
+  .irow { display: flex; align-items: center; gap: 10px; padding: 5px 6px; border-bottom: 1px dashed rgba(120,140,190,0.12); font-size: 13px; flex-wrap: wrap; }
+  .irow:hover { background: rgba(120,160,255,0.05); }
+  .iname { min-width: 130px; color: #e8ecf8; }
+  .icnt { color: #8fd48f; min-width: 34px; }
+  .iprice { color: #ffd76a; }
+  .lack { color: #ff8a7a; }
+  .ibox { max-height: 180px; overflow-y: auto; border: 1px solid rgba(120,140,190,0.15); border-radius: 8px; padding: 4px 8px; }
+  button { background: rgba(90,120,220,0.16); color: #cfe0ff; border: 1px solid rgba(140,180,255,0.4);
+    border-radius: 6px; padding: 3px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  button:hover { background: rgba(120,160,255,0.3); }
+  button:disabled { opacity: 0.4; cursor: default; }
+  .chip { margin: 2px 4px 2px 0; border-radius: 14px; padding: 4px 12px; }
+  .chip.on { background: #3d5cae; color: #fff; border-color: #9ab8ff; }
+  .bigbtn { font-size: 15px; padding: 8px 26px; margin-top: 6px; }
+  .bigbtn.ready { background: linear-gradient(90deg, #8a6a1a, #caa84a); color: #1a1200; border-color: #ffe28a;
+    animation: glow 1.2s infinite alternate; }
+  @keyframes glow { from { box-shadow: 0 0 6px rgba(255,226,138,0.4);} to { box-shadow: 0 0 22px rgba(255,226,138,0.8);} }
+  .cgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .cbox { background: rgba(120,150,255,0.05); border: 1px solid rgba(120,150,255,0.14); border-radius: 8px; padding: 10px 14px; font-size: 13px; line-height: 1.9; }
+  .two { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; }
+  .bar { height: 10px; background: rgba(0,0,0,0.5); border-radius: 5px; overflow: hidden; margin: 4px 0; }
+  .bar.big { height: 16px; }
+  .bar .fill { height: 100%; }
+
+  /* ---- 标题 ---- */
+  #title { position: absolute; inset: 0; z-index: 50; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; color: #e8ecf8; }
+  #title h1 { font-size: 64px; letter-spacing: 18px; color: #ffe28a; text-shadow: 0 0 40px rgba(255,200,80,0.5), 0 4px 8px #000;
+    margin-bottom: 6px; margin-left: 18px; }
+  #title .sub { color: #8a94ac; letter-spacing: 6px; margin-bottom: 42px; font-size: 14px; }
+  .rootcard { background: rgba(14,20,40,0.8); border: 1px solid rgba(140,180,255,0.3); border-radius: 10px;
+    padding: 14px 40px; text-align: center; margin-bottom: 26px; }
+  .rootcard .rcap { font-size: 12px; color: #8a94ac; letter-spacing: 4px; margin-bottom: 4px; }
+  #root-name { font-size: 30px; letter-spacing: 6px; }
+  #root-desc { color: #a8b2cc; font-size: 13px; margin-top: 4px; }
+  #seed-tip { color: #5a6480; font-size: 11px; margin-top: 6px; }
+  .tbtns { display: flex; gap: 18px; }
+  .tbtn { font-size: 17px; padding: 12px 44px; border-radius: 30px; letter-spacing: 4px; }
+  .tbtn.pri { background: linear-gradient(90deg,#8a6a1a,#caa84a); color: #1a1200; border-color: #ffe28a; }
+  #title .foot { position: absolute; bottom: 22px; color: #4a5470; font-size: 12px; letter-spacing: 2px; }
+
+  /* ---- 胜利 ---- */
+  #victory { position: absolute; inset: 0; z-index: 60; background: rgba(6,8,20,0.88);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffe28a; }
+  #victory h1 { font-size: 52px; letter-spacing: 14px; text-shadow: 0 0 46px rgba(255,210,100,0.7); margin-left: 14px; }
+  #victory p { color: #cfd6e8; margin: 18px 0 8px; font-size: 15px; letter-spacing: 2px; }
+  #vstats { color: #9ab8ff; font-size: 13px; margin-bottom: 30px; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<canvas id="minimap" width="158" height="118"></canvas>
+<div id="logbox"></div>
+<div id="toasts"></div>
+
+<!-- 面板 -->
+<div id="mask" class="hidden"></div>
+<div id="panel-char" class="panel hidden"><h2>道 基 · 角色</h2><div id="panel-char-body"></div></div>
+<div id="panel-shop" class="panel hidden"><h2>游方商 · 灵石交易</h2><div id="panel-shop-body"></div></div>
+<div id="panel-furnace" class="panel hidden"><h2>丹 炉 · 炼丹</h2><div id="panel-furnace-body"></div></div>
+
+<!-- 标题 -->
+<div id="title">
+  <h1>问道长生</h1>
+  <div class="sub">凡 尘 一 粟 · 可 可 证 长 生</div>
+  <div class="rootcard">
+    <div class="rcap">本 世 灵 根</div>
+    <div id="root-name">—</div>
+    <div id="root-desc"></div>
+    <div id="seed-tip"></div>
+  </div>
+  <div class="tbtns">
+    <button class="tbtn pri" id="btn-new">开 始 修 行</button>
+    <button class="tbtn" id="btn-continue">继 续 前 缘</button>
+    <button class="tbtn" id="btn-reroll">另 寻 仙 缘</button>
+  </div>
+  <div class="foot">WASD 移动 · 鼠标点击/空格 施法 · Shift 残影步 · E 交互 · R 打坐 · T 突破 · C 角色 · 自动存档</div>
+</div>
+
+<!-- 胜利 -->
+<div id="victory" class="hidden">
+  <h1>飞 升 成 仙</h1>
+  <p>九色神雷散尽，天门为你而开。自此星河为家，长生久视。</p>
+  <div id="vstats"></div>
+  <button class="tbtn pri" id="restart">转 世 重 修</button>
+</div>
+
+<script src="src/core.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>
