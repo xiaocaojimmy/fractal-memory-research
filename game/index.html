@@ -122,10 +122,10 @@
   .boonC .bd{font-size:13px;color:var(--dim);text-align:center;line-height:1.6}
   .boonhint{margin-top:24px;font-size:12px;color:#6f8296;letter-spacing:2px}
   /* achievement overlay */
-  #ovAch .apanel,#ovCodex .apanel,#ovMastery .apanel{width:620px;max-height:560px;background:rgba(13,19,27,.95);border:1px solid #3d5570;border-radius:14px;
+  #ovAch .apanel,#ovCodex .apanel,#ovMastery .apanel,#ovFund .apanel{width:620px;max-height:560px;background:rgba(13,19,27,.95);border:1px solid #3d5570;border-radius:14px;
                  padding:18px 24px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.7)}
-  #ovAch .ahead,#ovCodex .ahead,#ovMastery .ahead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-  #ovAch .ahead .t,#ovCodex .ahead .t,#ovMastery .ahead .t{font-size:22px;letter-spacing:4px;color:var(--gold-hi)}
+  #ovAch .ahead,#ovCodex .ahead,#ovMastery .ahead,#ovFund .ahead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  #ovAch .ahead .t,#ovCodex .ahead .t,#ovMastery .ahead .t,#ovFund .ahead .t{font-size:22px;letter-spacing:4px;color:var(--gold-hi)}
   #achCount{color:var(--cyan);font-size:14px}
   .cdxsub{color:#66788c;font-size:12px}
   #achList{overflow-y:auto;flex:1;padding-right:6px}
@@ -134,7 +134,7 @@
   .achRow b{color:#c3cfdd;white-space:nowrap}
   .achRow .ad{font-size:12px;color:#66788c;margin-left:auto}
   .achRow.ok{color:#e8dcb8}.achRow.ok b{color:#ffd873}.achRow.ok .ai{color:#ffd873}
-  #ovAch button,#ovCodex button{align-self:center;margin-top:12px;padding:8px 30px}
+  #ovAch button,#ovCodex button,#ovFund button{align-self:center;margin-top:12px;padding:8px 30px}
   /* bestiary */
   #ovCodex .apanel.cdx{width:900px;max-height:620px}
   #codexList{overflow-y:auto;flex:1;padding-right:6px;display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-content:start}
@@ -144,7 +144,16 @@
   .cdxRow .ct{color:#6d7f93;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cdxRow.boss b{color:#ff9d84}
   .cdxSec{grid-column:1/-1;margin:10px 0 2px;font-size:12px;letter-spacing:3px;color:var(--cyan);border-bottom:1px solid #23405a;padding-bottom:3px}
-  /* mastery pick */
+  /* war fund */
+  .fundRow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 14px;margin-bottom:9px;
+           border:1px solid #3d5570;border-radius:10px;cursor:pointer;background:rgba(28,42,60,.5);transition:border-color .12s,transform .1s}
+  .fundRow:hover{border-color:var(--gold-hi);transform:translateY(-1px)}
+  .fundRow.off{opacity:.45;cursor:default}
+  .fundRow.off:hover{border-color:#3d5570;transform:none}
+  .fundRow b{color:#e8dcb8;font-size:15px;letter-spacing:1px}
+  .fundN{color:#c9a4ff;font-size:12px;margin-left:8px}
+  .fundRow .fd{color:#7d90a5;font-size:12px;margin-top:3px}
+  .fundCost{color:var(--gold-hi);font-size:15px;white-space:nowrap}
   .mstRow{display:flex;gap:16px;justify-content:center;padding:8px 0 4px}
   .mstCard{width:250px;padding:20px 16px;border:1px solid #3d5570;border-radius:12px;background:linear-gradient(180deg,rgba(28,42,60,.7),rgba(14,22,33,.9));
            cursor:pointer;text-align:center;transition:transform .12s,border-color .12s}
@@ -196,6 +205,7 @@
     <button id="btnWave">开始防守 ▶</button>
     <button class="tbtn" id="btnSpeed" title="切换速度 (F)">1×</button>
     <button class="tbtn" id="btnPause" title="暂停 (P)">⏸</button>
+    <button class="tbtn" id="btnFund" title="军费 (G)">⚒</button>
     <button class="tbtn" id="btnAch" title="成就 (A)">★</button>
     <button class="tbtn" id="btnCodex" title="怪物图鉴 (B)">📖</button>
     <button class="tbtn" id="btnMute" title="音效开关">🔊</button>
@@ -239,7 +249,8 @@
         <b style="color:#c9a4ff">元素反应</b>：<b style="color:#bdefff">冻结 + 物理 = 碎裂</b>（按已损生命追加爆发）· <b style="color:#ffab5e">中毒 + 燃烬 = 爆燃</b>（毒层瞬间引爆）· 冻结 + 燃烬 = 蒸发（范围减速雾）· <b style="color:#b8f088">中毒 + 弧光 = 毒力传导</b>（闪电链带毒跳）。先手减速冻结、后手物理收割——反应伤害常是面板的 2 倍。<br>
         <b style="color:#ffd873">觉醒专精</b>：塔升满级时二选一（毁灭 +30% 伤害 / 疾风 +28% 攻速），按 <span class="k">1</span>/<span class="k">2</span> 定夺，永久生效。<br>
         <b style="color:#ff8a5e">血月与词缀</b>：随机<b>血月波</b>（怪狂化，清场掉大额缴获 + 全局塔伤永久 +1.5%）；第 10 波起每波带<b>波次词缀</b>（疾行/玄铁/抗魔/坚韧）；第 12 波起<b>每 3 波来 1 只精英</b>（紫金环标记：2.6 倍血、漏怪双倍痛、赏金 6 倍——值得为其留技能）。<br>
-        <b style="color:#8fdc7a">塔位即决策</b>：可建塔数有上限（普通 24 · 困难 20 · 噩梦 17，HUD 🗼 计数），换章<b>回收 8 成</b>并<b>铭刻觉醒专精</b>——塔会随战场退役，但该类塔下次练满可直接按 <span class="k">3</span> 继承原专精（主动出售同样保留）；连杀赏金最高 +50%，<b>漏一只全清零</b>。
+        <b style="color:#8fdc7a">塔位即决策</b>：可建塔数有上限（普通 24 · 困难 20 · 噩梦 17，HUD 🗼 计数），换章<b>回收 8 成</b>并<b>铭刻觉醒专精</b>——塔会随战场退役，但该类塔下次练满可直接按 <span class="k">3</span> 继承原专精（主动出售同样保留）；连杀赏金最高 +50%，<b>漏一只全清零</b>。<br>
+        <b style="color:#ffd873">军费（<span class="k">G</span>）</b>：后期的钱就该变成战力——⚒ 面板里金币直接购买<b>军火补给</b>（全塔伤害 +5%）、<b>战鼓动员</b>（攻速 +5%）、<b>要塞增援</b>（生命 +1），逐次涨价，何时囤钱何时投资就是后期博弈。
       </div>
       <button class="ghostbtn" id="btnCloseHelp">明白了</button>
     </div>
@@ -262,6 +273,16 @@
         <div class="ahead"><span class="t">成就</span><span id="achCount">0 / 20</span></div>
         <div id="achList"></div>
         <button id="btnCloseAch">关闭</button>
+      </div>
+    </div>
+    <!-- war fund -->
+    <div class="ov hidden" id="ovFund">
+      <div class="apanel">
+        <div class="ahead"><span class="t">军费调度</span><span class="cdxsub">金币即战力 · 买完即涨永久生效</span></div>
+        <div class="fundRow" data-f="dmg"><div><b>军火补给</b><span class="fundN">×0</span><div class="fd">全塔伤害 +5% / 次</div></div><div class="fundCost">900 ◈</div></div>
+        <div class="fundRow" data-f="haste"><div><b>战鼓动员</b><span class="fundN">×0</span><div class="fd">全塔攻速 +5% / 次</div></div><div class="fundCost">900 ◈</div></div>
+        <div class="fundRow" data-f="life"><div><b>要塞增援</b><span class="fundN">×0</span><div class="fd">生命 +1</div></div><div class="fundCost">1500 ◈</div></div>
+        <button id="btnCloseFund">关闭</button>
       </div>
     </div>
     <!-- mastery pick -->
