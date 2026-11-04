@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>水晶守卫 · Crystal Ward</title>
+<title>水晶守卫 · Crystal Ward II</title>
 <style>
   :root{
     --gold:#d9b56a; --gold-hi:#f3da9c; --gold-dk:#8a6a35;
@@ -16,177 +16,241 @@
        display:flex;align-items:center;justify-content:center}
   #app{width:1280px;transform-origin:center center}
   /* ---------- top HUD ---------- */
-  #hud{height:56px;display:flex;align-items:center;gap:10px;padding:0 14px;
+  #hud{height:52px;display:flex;align-items:center;gap:8px;padding:0 12px;
        background:linear-gradient(#1a2531,#10171f);border-bottom:1px solid #000;
        box-shadow:inset 0 1px 0 #2e3f52, 0 2px 8px rgba(0,0,0,.6);position:relative;z-index:5}
-  .brand{font-family:Georgia,"Noto Serif SC",serif;font-size:19px;letter-spacing:2px;color:var(--gold);
-         text-shadow:0 0 12px rgba(217,181,106,.35);margin-right:6px;white-space:nowrap}
+  .brand{font-family:Georgia,"Noto Serif SC",serif;font-size:17px;letter-spacing:2px;color:var(--gold);
+         text-shadow:0 0 12px rgba(217,181,106,.35);margin-right:2px;white-space:nowrap}
   .brand b{color:var(--cyan);text-shadow:0 0 14px rgba(127,231,255,.5)}
-  .chip{display:flex;align-items:center;gap:7px;background:linear-gradient(#202c3a,#161f2a);
-        border:1px solid #33465c;border-radius:9px;padding:5px 12px;font-size:16px;font-weight:600;
-        box-shadow:inset 0 1px 0 rgba(255,255,255,.07);min-width:88px}
-  .chip .ico{width:19px;height:19px;flex:none}
-  #chipLives .v{color:#ff8d84} #chipGold .v{color:var(--gold-hi)} #chipWave .v{color:var(--cyan)}
-  .chip.flash{animation:chipflash .45s}
-  @keyframes chipflash{0%{box-shadow:0 0 0 2px var(--gold-hi),0 0 18px var(--gold)}100%{box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}}
-  #nextPrev{display:flex;align-items:center;gap:6px;background:#121a24;border:1px solid #26374a;
-            border-radius:9px;padding:4px 10px;min-width:120px;height:38px;margin-left:2px}
-  #nextPrev .lbl{font-size:11px;color:var(--dim);margin-right:2px;writing-mode:vertical-lr;letter-spacing:2px;transform:scale(.9)}
-  #nextPrev canvas{width:26px;height:26px;image-rendering:auto}
-  #nextPrev .cnt{font-size:12px;color:var(--text);margin-left:-4px;margin-right:3px}
+  .chip{display:flex;align-items:center;gap:6px;background:linear-gradient(#202c3a,#161f2a);
+        border:1px solid #33465c;border-radius:9px;padding:4px 11px;font-size:15px;font-weight:600;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.07);white-space:nowrap}
+  .chip .ico{width:17px;height:17px;flex:none}
+  #lives{color:#ff8d84} #gold{color:var(--gold-hi)} #wave{color:var(--cyan)}
+  #chapter{color:#c9b8ff;font-weight:500;font-size:13px;border-color:#4a3f6e;background:linear-gradient(#251f38,#171326)}
   .spacer{flex:1}
+  #boonChips{display:flex;gap:4px;max-width:330px;overflow:hidden;align-items:center}
+  .bchip{font-size:10.5px;color:#e6d9b8;background:#1a2330;border:1px solid #3a4a35;border-radius:20px;
+         padding:2px 8px;white-space:nowrap;cursor:help}
   button{font-family:inherit;color:var(--text);cursor:pointer;border-radius:9px;
          border:1px solid #3a4d65;background:linear-gradient(#27384c,#1a2735);
          box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 4px rgba(0,0,0,.4);
          transition:filter .12s, transform .05s;font-size:14px}
   button:hover{filter:brightness(1.25)} button:active{transform:translateY(1px)}
   button:disabled{filter:grayscale(.8) brightness(.6);cursor:default}
-  .btn-sm{padding:6px 12px}
   #btnWave{background:linear-gradient(#3d6b34,#24451f);border-color:#5d9150;font-weight:700;
-           font-size:15px;padding:8px 18px;letter-spacing:1px;
+           font-size:14px;padding:8px 16px;letter-spacing:1px;
            box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 0 14px rgba(110,200,90,.25)}
-  #btnWave.ready{animation:wavepulse 1.4s infinite}
-  @keyframes wavepulse{0%,100%{box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 0 10px rgba(110,200,90,.25)}
-                       50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 0 22px rgba(140,230,110,.55)}}
-  .tbtn{width:38px;height:34px;text-align:center;line-height:32px;font-size:15px;padding:0}
+  .tbtn{width:36px;height:32px;text-align:center;line-height:30px;font-size:14px;padding:0}
   .tbtn.on{background:linear-gradient(#4a6484,#2c415a);border-color:#7fa4cc;color:#fff}
   /* ---------- stage ---------- */
   #stage{position:relative;width:1280px;height:704px;border:1px solid #000;border-top:none}
   #game{display:block;width:1280px;height:704px}
+  /* spell bar */
+  #spellbar{position:absolute;left:14px;bottom:14px;display:flex;gap:10px;z-index:4}
+  .spell{position:relative;width:52px;height:52px;border-radius:50%;overflow:hidden;
+         background:radial-gradient(circle at 35% 30%,#2a3a50,#111a26);
+         border:2px solid #47617f;display:flex;align-items:center;justify-content:center;
+         font-size:23px;padding:0;box-shadow:0 0 14px rgba(80,150,255,.25),inset 0 1px 0 rgba(255,255,255,.12)}
+  .spell:hover{filter:brightness(1.3)}
+  .spell.cool{filter:grayscale(.7) brightness(.6)}
+  .spell.aiming{border-color:var(--gold-hi);box-shadow:0 0 20px rgba(255,200,90,.6)}
+  .spell .cdmask{position:absolute;left:0;bottom:0;width:100%;height:0%;background:rgba(4,8,14,.68);pointer-events:none}
+  .spell .cdn{position:absolute;right:2px;bottom:1px;font-size:10px;color:#cfe0f4;pointer-events:none;text-shadow:0 1px 2px #000}
+  .spell .hk{position:absolute;left:2px;top:1px;font-size:9px;color:#9db4cf;pointer-events:none}
+  /* selection panel */
+  #sel{position:absolute;width:232px;background:rgba(13,19,27,.94);border:1px solid #3d5570;border-radius:12px;
+       padding:10px 13px;z-index:6;box-shadow:0 8px 30px rgba(0,0,0,.7);font-size:12px}
+  #sel.hidden{display:none}
+  #selName{font-size:14.5px;font-weight:800;color:#eef3fa;white-space:nowrap}
+  #selDps{color:var(--gold-hi);margin:2px 0}
+  #selInfo{color:var(--dim);line-height:1.5;margin-bottom:7px}
+  #sel button{width:100%;margin-top:5px;padding:6px 0;font-size:13px}
+  #selUp{background:linear-gradient(#4c6a3f,#2d4526);border-color:#6d9a5c}
+  #selSell{background:linear-gradient(#6a4c3f,#453026);border-color:#9a7a5c}
+  #sel .mut{font-size:10.5px;color:#93a5b8;font-weight:400}
+  #toast{position:absolute;left:50%;bottom:88px;transform:translateX(-50%);background:rgba(10,14,20,.9);
+         border:1px solid #47617f;border-radius:8px;padding:7px 18px;font-size:13px;z-index:7;
+         box-shadow:0 4px 18px rgba(0,0,0,.6)}
+  #toast.hidden{display:none}
   /* ---------- overlays ---------- */
   .ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
       background:radial-gradient(ellipse at center,rgba(4,8,14,.62) 0%,rgba(2,4,8,.88) 100%);z-index:10}
   .ov.hidden{display:none}
-  .ptitle{font-family:Georgia,"Noto Serif SC",serif;font-size:64px;letter-spacing:10px;color:var(--gold-hi);
+  .ptitle{font-family:Georgia,"Noto Serif SC",serif;font-size:58px;letter-spacing:9px;color:var(--gold-hi);
           text-shadow:0 0 30px rgba(217,181,106,.45),0 4px 0 #000;margin-bottom:4px}
   .ptitle b{color:var(--cyan);text-shadow:0 0 34px rgba(127,231,255,.65),0 4px 0 #000}
-  .psub{font-size:15px;color:var(--dim);letter-spacing:6px;margin-bottom:34px}
-  .howto{background:rgba(14,20,28,.82);border:1px solid var(--line);border-radius:14px;padding:18px 26px;
-         font-size:14px;line-height:1.95;color:#c8d2de;max-width:660px;margin-bottom:34px;
+  .psub{font-size:14px;color:var(--dim);letter-spacing:5px;margin-bottom:20px}
+  .tBest{font-size:12px;color:#7e93aa;margin-bottom:16px}
+  .howto{background:rgba(14,20,28,.82);border:1px solid var(--line);border-radius:14px;padding:16px 24px;
+         font-size:13.5px;line-height:1.9;color:#c8d2de;max-width:700px;margin-bottom:22px;
          box-shadow:0 10px 40px rgba(0,0,0,.6)}
   .howto b{color:var(--gold-hi)} .howto .k{display:inline-block;background:#26374a;border:1px solid #4a627e;
          border-radius:5px;padding:0 7px;font-size:12px;margin:0 2px;color:#dfe9f5}
-  .bigbtn{font-size:21px;padding:13px 54px;letter-spacing:6px;font-weight:700;
+  .bigbtn{font-size:20px;padding:12px 50px;letter-spacing:6px;font-weight:700;
           background:linear-gradient(#4c7d3f,#2c5424);border-color:#6da85c;color:#f2ffe9;
           box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 0 26px rgba(110,200,90,.3)}
-  .stats{display:flex;gap:34px;margin:20px 0 30px}
-  .stats .st{text-align:center}
-  .stats .st .n{font-size:34px;font-weight:800;color:var(--gold-hi);font-family:Georgia,serif}
-  .stats .st .t{font-size:12px;color:var(--dim);letter-spacing:2px;margin-top:2px}
-  .endtitle{font-size:58px;margin-bottom:6px}
-  .endtitle.win{color:var(--gold-hi);text-shadow:0 0 34px rgba(243,218,156,.5),0 4px 0 #000}
-  .endtitle.lose{color:#ff8d84;text-shadow:0 0 34px rgba(255,110,100,.45),0 4px 0 #000}
-  #pauseOv .ptitle{font-size:44px;letter-spacing:14px}
-  .btnrow{display:flex;gap:16px}
-  .ghostbtn{background:linear-gradient(#37506e,#22344a);border-color:#5576a0;padding:12px 30px;font-size:16px;letter-spacing:3px}
+  .ghostbtn{background:linear-gradient(#37506e,#22344a);border-color:#5576a0;padding:11px 26px;font-size:15px;letter-spacing:2px}
+  .btnrow{display:flex;gap:14px;align-items:center}
+  #diffRow{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:20px}
+  #diffBtns{display:flex;gap:10px}
+  .diffB{padding:9px 20px;font-size:14px;letter-spacing:1px;border-radius:10px}
+  .diffB.on{outline:2px solid var(--gold-hi);outline-offset:1px;filter:brightness(1.3)}
+  .diffB.lockd{filter:grayscale(.9) brightness(.55)}
+  .diffB.normal.on{outline-color:#8fdc7a} .diffB.hard.on{outline-color:#ffb86b} .diffB.night.on{outline-color:#ff7a6b}
+  #resumeRow{display:none}
+  /* end overlay */
+  #endTitle{font-size:52px;margin-bottom:10px;font-family:Georgia,"Noto Serif SC",serif;letter-spacing:6px}
+  #endTitle.win{color:var(--gold-hi);text-shadow:0 0 34px rgba(243,218,156,.5),0 4px 0 #000}
+  #endTitle.lose{color:#ff8d84;text-shadow:0 0 34px rgba(255,110,100,.45),0 4px 0 #000}
+  #endStats{display:flex;flex-wrap:wrap;gap:6px 30px;max-width:560px;justify-content:center;margin:8px 0 24px}
+  .erow{display:flex;gap:12px;font-size:14px;color:var(--dim);min-width:200px;justify-content:space-between}
+  .erow b{color:#e8e2d0}
+  .mbtn{padding:10px 26px;font-size:15px;letter-spacing:2px}
+  .mbtn.big{background:linear-gradient(#4c7d3f,#2c5424);border-color:#6da85c;font-weight:700}
+  /* boon overlay */
+  #ovBoon .bhead{font-size:30px;letter-spacing:6px;color:var(--gold-hi);margin-bottom:4px;font-family:Georgia,"Noto Serif SC",serif}
+  #boonWave{font-size:13px;color:var(--dim);letter-spacing:3px;margin-bottom:26px}
+  #boonCards{display:flex;gap:20px}
+  .boonC{width:200px;min-height:230px;background:linear-gradient(#1b2635,#121b26);border:2px solid var(--bc,#47617f);
+         border-radius:16px;padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;
+         cursor:pointer;transition:transform .12s, box-shadow .12s;box-shadow:0 6px 24px rgba(0,0,0,.6)}
+  .boonC:hover{transform:translateY(-6px) scale(1.03);box-shadow:0 0 30px color-mix(in srgb,var(--bc) 60%,transparent)}
+  .boonC .bico{width:56px;height:56px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--bc),#0d1420);
+               box-shadow:0 0 22px color-mix(in srgb,var(--bc) 70%,transparent)}
+  .boonC .bn{font-size:19px;font-weight:800;color:#f0e8d2;letter-spacing:2px}
+  .boonC .bd{font-size:13px;color:var(--dim);text-align:center;line-height:1.6}
+  .boonhint{margin-top:24px;font-size:12px;color:#6f8296;letter-spacing:2px}
+  /* achievement overlay */
+  #ovAch .apanel{width:620px;max-height:560px;background:rgba(13,19,27,.95);border:1px solid #3d5570;border-radius:14px;
+                 padding:18px 24px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.7)}
+  #ovAch .ahead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  #ovAch .ahead .t{font-size:22px;letter-spacing:4px;color:var(--gold-hi)}
+  #achCount{color:var(--cyan);font-size:14px}
+  #achList{overflow-y:auto;flex:1;padding-right:6px}
+  .achRow{display:flex;align-items:baseline;gap:10px;padding:7px 8px;border-bottom:1px solid #1c2836;font-size:13px;color:#8fa1b5}
+  .achRow .ai{font-size:15px}
+  .achRow b{color:#c3cfdd;white-space:nowrap}
+  .achRow .ad{font-size:12px;color:#66788c;margin-left:auto}
+  .achRow.ok{color:#e8dcb8}.achRow.ok b{color:#ffd873}.achRow.ok .ai{color:#ffd873}
+  #ovAch button{align-self:center;margin-top:12px;padding:8px 30px}
   /* ---------- bottom dock ---------- */
-  #dock{height:126px;display:flex;align-items:stretch;gap:10px;padding:10px 14px;
+  #dock{height:118px;display:flex;align-items:stretch;gap:10px;padding:8px 12px;
         background:linear-gradient(#141d27,#0d141c);border-top:1px solid #000;
-        box-shadow:inset 0 1px 0 #22303f}
-  #shop{display:flex;gap:8px}
-  .card{width:128px;background:linear-gradient(#1d2937,#151f2b);border:1px solid #31445a;border-radius:12px;
-        padding:7px 9px;cursor:pointer;position:relative;display:flex;gap:8px;align-items:center;
+        box-shadow:inset 0 1px 0 #22303f;position:relative}
+  #cards{display:flex;gap:6px}
+  .card{width:97px;height:100px;background:linear-gradient(#1d2937,#151f2b);border:1px solid #31445a;border-radius:11px;
+        padding:5px 6px;cursor:pointer;position:relative;display:flex;flex-direction:column;align-items:center;
         transition:border-color .12s, box-shadow .12s, transform .08s;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
   .card:hover{border-color:#5d7ea6;transform:translateY(-2px)}
-  .card.sel{border-color:var(--gold);box-shadow:0 0 14px rgba(217,181,106,.35),inset 0 1px 0 rgba(255,255,255,.06)}
-  .card.poor .cost{color:#ff8d84}
-  .card canvas{width:56px;height:56px;flex:none;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))}
-  .card .nm{font-size:13.5px;font-weight:700;color:#e9eef6;letter-spacing:.5px;white-space:nowrap}
-  .card .cost{font-size:13px;color:var(--gold-hi);font-weight:700;margin-top:1px}
+  .card.sel{border-color:var(--gold);box-shadow:0 0 14px rgba(217,181,106,.35)}
+  .card.off{filter:grayscale(.6) brightness(.7)}
+  .card.lock{filter:grayscale(.95) brightness(.5)}
+  .card .ic canvas{width:44px;height:44px;filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))}
+  .card .nm{font-size:12.5px;font-weight:700;color:#e9eef6;letter-spacing:.5px;white-space:nowrap;margin-top:1px}
+  .card .cost{font-size:12px;color:var(--gold-hi);font-weight:700}
   .card .cost::before{content:"◈ ";color:var(--gold)}
-  .card .tag{font-size:10.5px;color:var(--dim);margin-top:2px;line-height:1.35}
-  .card .hk{position:absolute;top:5px;right:7px;font-size:10px;color:#7e93aa;background:#101821;
-            border:1px solid #33465c;border-radius:4px;padding:0 4px}
-  #info{flex:1;background:linear-gradient(#182230,#111923);border:1px solid #2b3c50;border-radius:12px;
-        padding:10px 16px;font-size:13px;display:flex;gap:0;position:relative;overflow:hidden}
-  #info .tip{color:var(--dim);line-height:1.8;font-size:12.5px;align-self:center}
-  #info .tip b{color:var(--gold-hi)}
-  #selPanel{display:none;gap:16px;width:100%}
-  #selPanel.show{display:flex}
-  #selLeft{width:84px;display:flex;flex-direction:column;align-items:center;justify-content:center}
-  #selLeft canvas{width:64px;height:64px}
-  #selName{font-size:16px;font-weight:800;color:#eef3fa;letter-spacing:1px;white-space:nowrap}
-  #selLvl{color:var(--gold-hi);font-size:12px;letter-spacing:3px;margin:1px 0 5px}
-  #selStats{display:flex;gap:22px;align-self:center;font-size:13px;line-height:1.9;color:#c3cfdd}
-  #selStats b{color:#fff} #selStats .up{color:var(--green);font-size:11px;margin-left:3px}
-  #selStats .lbl{color:var(--dim)}
-  #selBtns{display:flex;flex-direction:column;gap:8px;align-self:center;margin-left:auto}
-  #selBtns button{padding:8px 20px;font-size:14px;white-space:nowrap}
-  #btnUp{background:linear-gradient(#4c6a3f,#2d4526);border-color:#6d9a5c}
-  #btnSell{background:linear-gradient(#6a4c3f,#453026);border-color:#9a7a5c}
-  #muteNote{position:absolute;bottom:8px;right:14px;font-size:11px;color:#5c6f84}
-  ::-webkit-scrollbar{width:0;height:0}
+  .card .key,.card .lkTag{position:absolute;top:4px;right:5px;font-size:9.5px;color:#7e93aa;background:#101821;
+        border:1px solid #33465c;border-radius:4px;padding:0 4px}
+  .card .lkTag{right:auto;left:5px;color:#c9b8ff;border-color:#4a3f6e}
+  #tip{position:absolute;left:12px;bottom:112px;max-width:420px;background:rgba(10,14,20,.95);border:1px solid #47617f;
+       border-radius:9px;padding:8px 14px;font-size:12.5px;line-height:1.65;z-index:8;pointer-events:none;
+       box-shadow:0 6px 20px rgba(0,0,0,.6)}
+  #tip.hidden{display:none}
+  #tip b{color:var(--gold-hi)} #tip .mut{color:var(--dim)}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:#31445a;border-radius:4px}
 </style>
 </head>
 <body>
 <div id="app">
   <div id="hud">
-    <div class="brand">水晶守卫 <b>CRYSTAL&nbsp;WARD</b></div>
-    <div class="chip" id="chipLives"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2 5 9l7 13 7-13z" fill="#7fe7ff" stroke="#bff4ff" stroke-width="1"/><path d="M12 2 9 9l3 13 3-13z" fill="#2f9ec9" opacity=".55"/></svg><span class="v" id="vLives">20</span></div>
-    <div class="chip" id="chipGold"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2 5 9l7 13 7-13z" fill="#ffd873" stroke="#ffe9b0" stroke-width="1"/><path d="M12 2 9 9l3 13 3-13z" fill="#c98f2f" opacity=".55"/></svg><span class="v" id="vGold">0</span></div>
-    <div class="chip" id="chipWave"><svg class="ico" viewBox="0 0 24 24"><path d="M3 13c2.8-3.2 5.6-3.2 8.4 0s5.8 3.2 8.6 0" fill="none" stroke="#8fdc7a" stroke-width="2.4" stroke-linecap="round"/><path d="M3 18c2.8-3.2 5.6-3.2 8.4 0s5.8 3.2 8.6 0" fill="none" stroke="#5c9a50" stroke-width="2.4" stroke-linecap="round"/><path d="M3 8c2.8-3.2 5.6-3.2 8.4 0s5.8 3.2 8.6 0" fill="none" stroke="#b0f09a" stroke-width="2.4" stroke-linecap="round"/></svg><span class="v"><span id="vWave">0</span><span style="color:var(--dim);font-size:12px">/20</span></span></div>
-    <div id="nextPrev"><span class="lbl">来敌</span></div>
+    <div class="brand">水晶守卫 <b>WARD II</b></div>
+    <div class="chip"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2 5 9l7 13 7-13z" fill="#7fe7ff" stroke="#bff4ff" stroke-width="1"/><path d="M12 2 9 9l3 13 3-13z" fill="#2f9ec9" opacity=".55"/></svg><span id="lives">20</span></div>
+    <div class="chip"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2 5 9l7 13 7-13z" fill="#ffd873" stroke="#ffe9b0" stroke-width="1"/><path d="M12 2 9 9l3 13 3-13z" fill="#c98f2f" opacity=".55"/></svg><span id="gold">300</span></div>
+    <div class="chip"><span id="wave">第 0 / 60 波</span></div>
+    <div class="chip" id="chapterChip"><span id="chapter">边境哨线</span></div>
+    <div id="boonChips"></div>
     <div class="spacer"></div>
-    <button id="btnWave">▶ 开始第 1 波</button>
+    <button id="btnWave">开始防守 ▶</button>
     <button class="tbtn" id="btnSpeed" title="切换速度 (F)">1×</button>
-    <button class="tbtn" id="btnPause" title="暂停 (空格)">⏸</button>
-    <button class="tbtn on" id="btnSound" title="音效开关 (M)">♪</button>
+    <button class="tbtn" id="btnPause" title="暂停 (P)">⏸</button>
+    <button class="tbtn" id="btnAch" title="成就 (A)">★</button>
+    <button class="tbtn" id="btnMute" title="音效开关">🔊</button>
   </div>
   <div id="stage">
     <canvas id="game" width="1280" height="704"></canvas>
-    <div class="ov" id="titleOv">
-      <div class="ptitle">水晶<b>守卫</b></div>
-      <div class="psub">CRYSTAL&nbsp;WARD&nbsp;·&nbsp;守&nbsp;护&nbsp;最&nbsp;后&nbsp;的&nbsp;光</div>
-      <div class="howto">
-        <b>玩法</b>：魔族大军沿古道进犯，水晶是最后的防线。在草地与林间<b>建造防御塔</b>，击杀敌人获得 ◈ 晶钻，
-        升级塔、灵活搭配，撑过 <b>20 波</b>进攻即可胜利。第 5/10/15/20 波有<b style="color:#ff8d84">魔族首领</b>压阵。<br>
-        <span class="k">1-5</span> 选择防御塔&nbsp;&nbsp;<span class="k">左键</span> 放置 / 选中&nbsp;&nbsp;<span class="k">右键</span> <span class="k">Esc</span> 取消&nbsp;&nbsp;
-        <span class="k">空格</span> 暂停&nbsp;&nbsp;<span class="k">F</span> 加速&nbsp;&nbsp;<span class="k">M</span> 静音&nbsp;&nbsp;胜利后可继续<b>无尽模式</b>。
-      </div>
-      <button class="bigbtn" id="btnStart">开 始 战 斗</button>
+    <div id="spellbar">
+      <button class="spell" id="sp_meteor"><span class="hk">Q</span>☄<span class="cdmask"></span><span class="cdn">Q</span></button>
+      <button class="spell" id="sp_blizzard"><span class="hk">W</span>❄<span class="cdmask"></span><span class="cdn">W</span></button>
+      <button class="spell" id="sp_mend"><span class="hk">E</span>✚<span class="cdmask"></span><span class="cdn">E</span></button>
     </div>
-    <div class="ov hidden" id="pauseOv">
-      <div class="ptitle">暂&nbsp;停</div><div style="height:26px"></div>
-      <div class="btnrow"><button class="ghostbtn" id="btnResume">继续战斗（空格）</button></div>
+    <div id="sel" class="hidden">
+      <div id="selName">塔</div>
+      <div id="selDps"></div>
+      <div id="selInfo"></div>
+      <button id="selUp">升级</button>
+      <button id="selSell">出售</button>
     </div>
-    <div class="ov hidden" id="endOv">
-      <div class="ptitle endtitle" id="endTitle"></div>
-      <div class="psub" id="endSub"></div>
-      <div class="stats">
-        <div class="st"><div class="n" id="stWave">0</div><div class="t">抵达波次</div></div>
-        <div class="st"><div class="n" id="stKill">0</div><div class="t">击杀敌军</div></div>
-        <div class="st"><div class="n" id="stGold">0</div><div class="t">累计晶钻</div></div>
-        <div class="st"><div class="n" id="stBuild">0</div><div class="t">建造塔数</div></div>
-      </div>
+    <div id="toast" class="hidden"></div>
+    <!-- title -->
+    <div class="ov" id="ovTitle">
+      <div class="ptitle">水晶<b>守卫 II</b></div>
+      <div class="psub">CRYSTAL&nbsp;WARD&nbsp;·&nbsp;六&nbsp;十&nbsp;波&nbsp;魔&nbsp;潮&nbsp;·&nbsp;三&nbsp;界&nbsp;战&nbsp;场</div>
+      <div class="tBest" id="titleBest"></div>
+      <div id="diffRow"><div id="diffBtns"></div></div>
       <div class="btnrow">
-        <button class="ghostbtn hidden" id="btnEndless" style="display:none">进入无尽模式</button>
-        <button class="bigbtn" style="font-size:17px;padding:12px 40px" id="btnRetry">再 战 一 局</button>
+        <button class="bigbtn" id="btnStart">开 始 战 斗</button>
+        <span id="resumeRow"><button class="ghostbtn" id="btnResume">继续作战</button></span>
+        <button class="ghostbtn" id="btnHelp">玩法说明</button>
+      </div>
+    </div>
+    <!-- help -->
+    <div class="ov hidden" id="ovHelp">
+      <div class="howto">
+        <b>目标</b>：魔族大军沿古道进犯水晶。<b>建造并升级防御塔</b>，撑过 <b>6 章 60 波</b>（每章第 10 波有<b style="color:#ff8d84">首领</b>，各带妖术）。通关后解锁<b>无尽模式</b>。<br>
+        <b>章节</b>：每 10 波为一章，换章自动<b>全额回收</b>全部防御塔并可能转移新战场（森林→沙漠→冰原）；新塔随章节解锁（共 9 种）。<br>
+        <b>指挥官技能</b>：<span class="k">Q</span> 陨石术（点击区域轰击）&nbsp;<span class="k">W</span> 暴雪（全屏冻结）&nbsp;<span class="k">E</span> 圣所急救（+2 生命）。<br>
+        <b>祝福</b>：每 5 波三选一，永久叠加，组合出你的流派。<br>
+        <b>操作</b>：<span class="k">1~9</span> 选塔&nbsp;<span class="k">左键</span> 放置/选中&nbsp;<span class="k">右键</span><span class="k">Esc</span> 取消&nbsp;<span class="k">空格</span> 召唤下一波&nbsp;<span class="k">U</span> 升级&nbsp;<span class="k">S</span> 出售&nbsp;<span class="k">P</span> 暂停&nbsp;<span class="k">F</span> 加速&nbsp;<span class="k">A</span> 成就。Shift+放置可连放。<br>
+        <b>克制</b>：轰击/破城只打地面；持盾抗物理、怨灵抗魔法；祭司群疗、刺客漏 2 血——看清楚再布防。
+      </div>
+      <button class="ghostbtn" id="btnCloseHelp">明白了</button>
+    </div>
+    <!-- boon -->
+    <div class="ov hidden" id="ovBoon">
+      <div class="bhead">战 意 凝 聚</div>
+      <div id="boonWave"></div>
+      <div id="boonCards"></div>
+      <div class="boonhint">选择一个祝福，永久生效</div>
+    </div>
+    <!-- end -->
+    <div class="ov hidden" id="ovEnd">
+      <div id="endTitle"></div>
+      <div id="endStats"></div>
+      <div class="btnrow" id="endBtns"></div>
+    </div>
+    <!-- achievements -->
+    <div class="ov hidden" id="ovAch">
+      <div class="apanel">
+        <div class="ahead"><span class="t">成就</span><span id="achCount">0 / 20</span></div>
+        <div id="achList"></div>
+        <button id="btnCloseAch">关闭</button>
       </div>
     </div>
   </div>
   <div id="dock">
-    <div id="shop"></div>
-    <div id="info">
-      <div class="tip" id="tipText">
-        点击下方卡片（或按 <b>1~5</b>）选择防御塔，再点地图空地放置。<br>
-        点已建成的塔可查看属性、<b>升级</b>与<b>出售</b>（返还 70%）。<br>
-        <b>加农炮</b>只打地面，<b>霜塔</b>减速全体，<b>弧光塔</b>连锁闪电，<b>棱镜塔</b>射程超远专杀首领。<br>
-        <span id="muteNote"></span>
-      </div>
-      <div id="selPanel">
-        <div id="selLeft"><canvas id="selIcon" width="128" height="128"></canvas></div>
-        <div style="display:flex;flex-direction:column;justify-content:center">
-          <div id="selName">塔</div><div id="selLvl">LV.1</div>
-        </div>
-        <div id="selStats"></div>
-        <div id="selBtns">
-          <button id="btnUp">升级</button>
-          <button id="btnSell">出售</button>
-        </div>
-      </div>
-    </div>
+    <div id="cards"></div>
+    <div id="tip" class="hidden"></div>
   </div>
 </div>
+<script>
+  function fitApp() {
+    const s = Math.min(1, (innerWidth - 8) / 1280, (innerHeight - 8) / 912);
+    document.getElementById('app').style.transform = s < 1 ? 'scale(' + s + ')' : '';
+  }
+  addEventListener('resize', fitApp); fitApp();
+</script>
 <script src="game.js"></script>
 </body>
 </html>
