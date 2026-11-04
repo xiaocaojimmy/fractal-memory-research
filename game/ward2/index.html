@@ -102,7 +102,12 @@
         <div class="title">王座防线</div>
         <div class="sub">THRONE LINE · 你的单位就是墙</div>
         <div id="diffBtns"></div>
+        <div id="chBtns" style="display:flex;gap:8px;justify-content:center;margin-top:8px"></div>
         <button class="bigbtn" id="btnStart">开 始 战 斗</button>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:10px">
+          <button class="ghostbtn" id="btnArmory">🏅 皇家军械库</button>
+          <button class="ghostbtn" id="btnDaily">🌙 每日突袭（勋章 ×2）</button>
+        </div>
         <div class="hint">
           怪不走路——从右侧旷野直扑左侧王座，<b>能阻挡的单位就是防线</b>。
           前排（剑卫/枪兵）截住敌人贴身肉搏，远程只能躲在身后。
@@ -134,8 +139,18 @@
         <div class="sub" id="endSub"></div>
         <div class="endbtns">
           <button class="bigbtn" id="btnEndAgain">再 战</button>
+          <button class="ghostbtn" id="btnNextCh" style="display:none"></button>
           <button class="ghostbtn" id="btnEndTitle">返回标题</button>
         </div>
+      </div>
+    </div>
+    <div class="ov hidden" id="ovArm">
+      <div class="apanel" style="max-width:820px">
+        <div class="title" style="font-size:26px">皇 家 军 械 库</div>
+        <div class="sub">勋章在战斗中结算获得（章节/难度/每日突袭加成）· 永久生效</div>
+        <div style="font-size:22px;color:#ffd873;margin:6px 0 12px" id="armMedals">🏅 0</div>
+        <div id="armCards" style="display:flex;flex-wrap:wrap;gap:10px"></div>
+        <button class="ghostbtn" id="btnArmBack" style="margin-top:14px">返 回</button>
       </div>
     </div>
   </div>
