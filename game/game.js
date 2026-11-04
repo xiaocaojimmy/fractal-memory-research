@@ -1847,7 +1847,9 @@ function refreshFund() {
   }
 }
 function toggleFund() {
-  if ($('ovFund').classList.contains('hidden')) { refreshFund(); showOv('ovFund'); }
+  const ov = $('ovFund');
+  if (!ov) return;
+  if (ov.classList.contains('hidden')) { refreshFund(); showOv('ovFund'); }
   else hideOv('ovFund');
 }
 setInterval(() => { const ov = document.getElementById('ovFund'); if (ov && !ov.classList.contains('hidden') && typeof refreshFund === 'function') refreshFund(); }, 500);
@@ -2319,8 +2321,10 @@ $('btnAch').addEventListener('click', () => { renderAch(); showOv('ovAch'); });
 $('btnCloseAch').addEventListener('click', () => hideOv('ovAch'));
 $('btnCodex').addEventListener('click', () => { renderCodex(); showOv('ovCodex'); });
 $('btnCloseCodex').addEventListener('click', () => hideOv('ovCodex'));
-$('btnFund').addEventListener('click', toggleFund);
-$('btnCloseFund').addEventListener('click', () => hideOv('ovFund'));
+const bf = $('btnFund');
+if (bf) bf.addEventListener('click', toggleFund);
+const bcf = $('btnCloseFund');
+if (bcf) bcf.addEventListener('click', () => hideOv('ovFund'));
 for (const row of document.querySelectorAll('.fundRow')) {
   row.addEventListener('click', () => {
     if (fundTry(row.dataset.f, 0)) {
@@ -3347,12 +3351,14 @@ if (Q.get('demo') === '1') {
     const sp = game.speed;
     el.btnSpeed.click();
     R.push(['pause', pz && !game.paused, 'speed', sp === 2]);
-    el.btnFund.click();
-    R.push(['fundOv', !$('ovFund').classList.contains('hidden')]);
-    game.gold = 5000;
-    fundTry('dmg');
-    R.push(['fundBuy', game.fundDmg === 1 && boonSum().dmg > 1.05]);
-    $('btnCloseFund').click();
+    if (el.btnFund) {
+      el.btnFund.click();
+      R.push(['fundOv', !$('ovFund').classList.contains('hidden')]);
+      game.gold = 5000;
+      fundTry('dmg');
+      R.push(['fundBuy', game.fundDmg === 1 && boonSum().dmg > 1.05]);
+      $('btnCloseFund').click();
+    }
     openBoons();
     R.push(['boonOv', !!game.boonMode && !$('ovBoon').classList.contains('hidden')]);
     $('boonCards').querySelector('.boonC').click();
