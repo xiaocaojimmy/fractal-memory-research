@@ -635,9 +635,9 @@ const CHAPTERS = [
 ];
 const TOTAL_WAVES = 60;
 const DIFFS = {
-  normal: { name: '普通', hp: 1, gold: 1, lives: 14, boss: 1, cap: 26 },
-  hard: { name: '困难', hp: 1.35, gold: 0.95, lives: 11, boss: 1.15, cap: 22 },
-  night: { name: '噩梦', hp: 1.8, gold: 0.88, lives: 7, boss: 1.3, cap: 19 },
+  normal: { name: '普通', hp: 1, gold: 1, lives: 12, boss: 1, cap: 24 },
+  hard: { name: '困难', hp: 1.35, gold: 0.95, lives: 10, boss: 1.15, cap: 20 },
+  night: { name: '噩梦', hp: 1.8, gold: 0.88, lives: 6, boss: 1.3, cap: 17 },
 };
 
 /* ---------------- wave table ---------------- */
@@ -864,7 +864,7 @@ class Enemy {
     const B = boonSum();
     const D = DIFFS[game.diff];
     const n = game.wave;
-    let hp = def.hp * Math.pow(1.087, n - 1);
+    let hp = def.hp * Math.pow(1.094, n - 1);
     if (this.boss) {
       const s = Math.pow(1.105, Math.min(n, 28) - 1) * Math.pow(1.015, Math.max(0, n - 28));
       hp = def.hp * s * D.boss * (def.hpMul || 1);
@@ -1148,7 +1148,7 @@ class Enemy {
     const B = boonSum();
     game.combo++;
     if (game.combo > game.comboBest) game.comboBest = game.combo;
-    const g = Math.round(this.gold * B.gold * 0.8 * (1 + Math.min(0.5, game.combo * 0.012)));
+    const g = Math.round(this.gold * B.gold * 0.76 * (1 + Math.min(0.5, game.combo * 0.012)));
     if (game.combo >= 10 && game.combo % 10 === 0) addText(this.x, this.y - this.r - 20, game.combo + ' 连杀！', '#ffcf5e', 15, -38);
     game.gold += g;
     game.stats.gold += g; game.stats.kills++;
@@ -1662,7 +1662,7 @@ function nextWave() {
     for (let i = 0; i < cnt; i++) game.spawnQueue.push({ type, at: delay + i * gap });
   }
   game.spawnQueue.sort((a, b) => a.at - b.at);
-  if (waveBossIdx(game.wave) < 0 && game.wave >= 12 && game.wave % 3 === 0) {
+  if (waveBossIdx(game.wave) < 0 && game.wave >= 12 && game.wave % 2 === 0 && RT() < 0.8) {
     const pool = game.spawnQueue.filter(q => !ENEMY[q.type] || !ENEMY[q.type].boss);
     if (pool.length) {
       const pick = pool[Math.floor(RT() * pool.length) % pool.length];
@@ -1692,7 +1692,7 @@ function updateWave(dt) {
 function endWave() {
   game.waveActive = false;
   if (window.__PROBE) window.__WLOG = (window.__WLOG || '') + game.wave + ':t' + game.towers.length + '/g' + Math.round(game.gold / 100) + ';';
-  const bonus = Math.round(18 + game.wave * 2.5);
+  const bonus = Math.round(16 + game.wave * 2);
   game.gold += bonus; game.stats.gold += bonus;
   addText(W / 2, 110, '波次奖励 +' + bonus + ' ◈', '#ffd873', 15, -24);
   if (game.waveLeaks === 0) {
@@ -2189,9 +2189,9 @@ function renderTitle() {
   const btns = $('diffBtns');
   btns.innerHTML = '';
   const defs = [
-    ['normal', '普通 · 14 生命 · 26 塔位'],
-    ['hard', '困难 · 11 生命 · 22 塔位（敌血 ×1.35）' + (canDiff('hard') ? '' : ' 🔒')],
-    ['night', '噩梦 · 7 生命 · 19 塔位（敌血 ×1.8）' + (canDiff('night') ? '' : ' 🔒')],
+    ['normal', '普通 · 12 生命 · 24 塔位'],
+    ['hard', '困难 · 10 生命 · 20 塔位（敌血 ×1.4）' + (canDiff('hard') ? '' : ' 🔒')],
+    ['night', '噩梦 · 6 生命 · 17 塔位（敌血 ×1.85）' + (canDiff('night') ? '' : ' 🔒')],
   ];
   for (const [k, label] of defs) {
     const b = document.createElement('button');
