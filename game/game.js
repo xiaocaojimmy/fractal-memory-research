@@ -471,15 +471,24 @@ function drawGlow(c, color, x, y, size, alpha) {
 const ENEMY = {
   goblin: { name: '哥布林', hp: 62, spd: 56, armor: 0, mr: 0, gold: 7, leak: 1, r: 10, body: '#79c04f' },
   wolf: { name: '森林狼', hp: 52, spd: 88, armor: 0, mr: 0, gold: 8, leak: 1, r: 10, body: '#8f8a86' },
+  runner: { name: '疾足奔行者', hp: 78, spd: 120, armor: 0, mr: 0, gold: 9, leak: 1, r: 9, body: '#d9e355', fast: 1 },
   orc: { name: '兽人', hp: 170, spd: 40, armor: 3, mr: 0, gold: 12, leak: 1, r: 13, body: '#8aa458' },
+  beast: { name: '岩背戈伦', hp: 1350, spd: 20, armor: 6, mr: 2, gold: 46, leak: 2, r: 17, body: '#9c5a33', beef: 1, freezeRes: 0.6 },
   bat: { name: '石像蝠', hp: 55, spd: 82, armor: 0, mr: 2, gold: 9, leak: 1, r: 10, fly: true, body: '#9b6bd6' },
+  sprite: { name: '疾风精灵', hp: 88, spd: 102, armor: 0, mr: 4, gold: 10, leak: 1, r: 8, fly: true, body: '#9fe3ff', fast: 1 },
   wraith: { name: '怨灵', hp: 140, spd: 54, armor: 0, mr: 8, gold: 14, leak: 1, r: 11, fly: true, body: '#a8e6ff' },
   shaman: { name: '兽血祭司', hp: 110, spd: 44, armor: 0, mr: 6, gold: 18, leak: 1, r: 11, body: '#c76fb0', healer: true },
   shield: { name: '持盾武士', hp: 330, spd: 36, armor: 4, mr: 0, gold: 22, leak: 1, r: 13, body: '#9d8f77', physRes: 0.5 },
+  knight: { name: '黑铠骑士', hp: 500, spd: 33, armor: 22, mr: 0, gold: 40, leak: 2, r: 13, body: '#5f6875', magicVuln: 1.4 },
+  warder: { name: '缚魂破法者', hp: 470, spd: 36, armor: 7, mr: 12, gold: 42, leak: 2, r: 12, body: '#7a4fae', magicRes: 0.8 },
+  bomber: { name: '自爆甲虫', hp: 110, spd: 74, armor: 0, mr: 0, gold: 11, leak: 1, r: 9, body: '#e2703a', boom: { r: 96, t: 1.5 } },
+  drummer: { name: '战鼓督军', hp: 600, spd: 29, armor: 8, mr: 6, gold: 44, leak: 2, r: 13, body: '#b0483a', aura: { r: 120, spd: 1.22 } },
   splitter: { name: '腐泥怪', hp: 300, spd: 40, armor: 2, mr: 2, gold: 20, leak: 1, r: 14, body: '#6f8f4a', split: { type: 'slime', n: 3 } },
   slime: { name: '泥块', hp: 70, spd: 62, armor: 0, mr: 0, gold: 3, leak: 1, r: 8, body: '#84a95c', fromSplit: true },
   zealot: { name: '狂信徒', hp: 320, spd: 42, armor: 3, mr: 4, gold: 20, leak: 1, r: 12, body: '#c2564a', zealot: true },
+  shade: { name: '潜影行者', hp: 290, spd: 55, armor: 4, mr: 6, gold: 26, leak: 1, r: 10, body: '#465a7e', phase: { on: 1.6, off: 3.2 } },
   golem: { name: '岩石魔像', hp: 540, spd: 25, armor: 9, mr: 2, gold: 34, leak: 2, r: 16, body: '#8d97a3' },
+  siege: { name: '撼地攻城兽', hp: 1050, spd: 23, armor: 14, mr: 6, gold: 60, leak: 3, r: 16, body: '#8a6f4a', siege: { cd: 5.5, range: 190, t: 2.2 } },
   assassin: { name: '暗影刺客', hp: 460, spd: 76, armor: 4, mr: 6, gold: 30, leak: 2, r: 11, body: '#4a4560' },
   golemShard: { name: '巨像碎片', hp: 260, spd: 30, armor: 8, mr: 2, gold: 18, leak: 1, r: 12, body: '#9fb0be', fromSplit: true },
   shadowLing: { name: '魔王残影', hp: 380, spd: 52, armor: 6, mr: 8, gold: 26, leak: 1, r: 11, body: '#8a3a5e', fromSplit: true },
@@ -616,10 +625,10 @@ const BOONS = [
 ];
 const CHAPTERS = [
   { name: '第一章 · 边境哨线', map: 0, unlock: ['arrow', 'frost', 'cannon'], msg: '魔族前锋试探边境，弩手与霜塔是最初的盾。' },
-  { name: '第二章 · 幽暗林道', map: 0, unlock: ['arc', 'poison'], msg: '狼群出没林间——弧光塔与腐毒塔解禁。' },
-  { name: '第三章 · 黄沙遗迹', map: 1, unlock: ['prism', 'flame'], msg: '商队沉入黄沙。移防遗迹，棱镜与燃烬苏醒。' },
-  { name: '第四章 · 风暴回廊', map: 1, unlock: ['siege'], msg: '腐泥与狂信徒涌来，破城塔碾碎重甲。' },
-  { name: '第五章 · 冰封王座', map: 2, unlock: ['banner'], msg: '魔王寝宫寒气彻骨，军旗祭坛在冰原上竖起。' },
+  { name: '第二章 · 幽暗林道', map: 0, unlock: ['arc', 'poison'], msg: '狼群与疾足奔行者出没林间，小心自爆甲虫炸瘫塔位——弧光与腐毒解禁。' },
+  { name: '第三章 · 黄沙遗迹', map: 1, unlock: ['prism', 'flame'], msg: '黑铠骑士重甲惧法，正好交给棱镜与燃烬；岩背戈伦皮糙厚，减速集火。' },
+  { name: '第四章 · 风暴回廊', map: 1, unlock: ['siege'], msg: '缚魂破法者反弹魔法——物理塔回归；疾风精灵空袭，战鼓督军务必优先击杀。' },
+  { name: '第五章 · 冰封王座', map: 2, unlock: ['banner'], msg: '潜影行者周期隐身穿塔而过，攻城兽远程瘫痪塔位——塔别摆太密，军旗竖起。' },
   { name: '第六章 · 终局 · 巴尔降临', map: 2, unlock: [], msg: '六十年一遇的月蚀。全体动员，迎接完全体魔王。' },
 ];
 const TOTAL_WAVES = 60;
@@ -633,7 +642,7 @@ const DIFFS = {
 function waveGroups(n) {
   if (n > TOTAL_WAVES) {
     const g = [];
-    const pools = [['orc', 0.55], ['wolf', 0.4], ['bat', 0.42], ['wraith', 0.7], ['shield', 0.9], ['golem', 1.6], ['zealot', 0.8], ['assassin', 0.9], ['splitter', 1.0], ['shaman', 1.1]];
+    const pools = [['orc', 0.55], ['wolf', 0.4], ['runner', 0.34], ['bat', 0.42], ['sprite', 0.4], ['wraith', 0.7], ['shield', 0.9], ['knight', 0.85], ['warder', 0.85], ['bomber', 0.4], ['drummer', 1.5], ['golem', 1.6], ['beast', 1.9], ['zealot', 0.8], ['assassin', 0.9], ['shade', 0.75], ['siege', 1.5], ['splitter', 1.0], ['shaman', 1.1]];
     const extra = Math.floor((n - TOTAL_WAVES) / 8);
     for (let i = 0; i < 4; i++) {
       const pk = pools[Math.floor(rndG() * pools.length) % pools.length];
@@ -651,46 +660,69 @@ function waveGroups(n) {
     push('orc', 5 + ch * 2, 0.7, 0);
     if (ch >= 1) push('bat', 6 + ch, 0.5, 2);
     if (ch >= 2) push('wraith', 5 + ch, 0.7, 4);
+    if (ch >= 2) push('knight', 2 + ch - 1, 1.4, 5);
+    if (ch >= 3) push('warder', 2 + Math.floor(ch / 2), 1.5, 6);
     if (ch >= 4) push('golem', 2 + Math.floor(ch / 2), 1.8, 1);
+    if (ch >= 4) push('drummer', 1 + Math.floor(ch / 3), 2.2, 3);
+    if (ch >= 3) push('bomber', 3 + ch, 0.4, 7);
     return g;
   }
   if (ch === 0) {
     push('goblin', 6 + ph, 0.85 - ph * 0.02, 0);
     if (ph >= 3) push('orc', ph * 0.6, 1.3, 5);
     if (ph >= 5) push('bat', ph * 0.5, 0.7, 8);
+    if (ph >= 8) push('wolf', 3, 0.5, 11);
   } else if (ch === 1) {
     push('goblin', 8 + ph, 0.6, 0);
     push('wolf', 4 + ph, 0.35, 4);
+    if (ph >= 2) push('runner', 2 + ph * 0.6, 0.4, 6);
     if (ph >= 3) push('wraith', ph * 0.4, 1.1, 9);
     if (ph >= 4) push('bat', 4 + ph * 0.5, 0.55, 7);
+    if (ph >= 5) push('bomber', 2 + ph * 0.4, 0.5, 2);
+    if (ph >= 7) push('shaman', 1, 1.2, 10);
   } else if (ch === 2) {
     push('orc', 6 + ph, 0.6, 0);
     push('bat', 5 + ph, 0.45, 3);
-    if (ph >= 2) push('shaman', ph * 0.3, 1.4, 6);
+    if (ph >= 2) push('knight', 1 + ph * 0.35, 1.5, 5);
     if (ph >= 4) push('shield', ph * 0.3, 1.5, 8);
-    if (ph >= 6) push('wolf', 8, 0.35, 10);
+    if (ph >= 4) push('runner', 6, 0.35, 10);
+    if (ph >= 5) push('bomber', 4, 0.45, 1);
+    if (ph >= 6) push('beast', 1 + Math.floor((ph - 5) / 2), 2.4, 7);
+    if (ph >= 3) push('shaman', ph * 0.3, 1.4, 6);
   } else if (ch === 3) {
     push('wolf', 8 + ph, 0.32, 0);
-    push('shield', 4 + ph * 0.4, 1.1, 3);
-    push('wraith', 5 + ph * 0.3, 0.9, 5);
-    if (ph >= 3) push('splitter', ph * 0.35, 1.3, 6);
-    if (ph >= 4) push('zealot', ph * 0.35, 1.2, 8);
-    if (ph >= 7) push('shaman', 3, 1.2, 10);
+    push('sprite', 4 + ph * 0.7, 0.5, 2);
+    push('warder', 1 + ph * 0.3, 1.5, 5);
+    if (ph >= 2) push('knight', 3, 1.2, 6);
+    if (ph >= 3) push('splitter', ph * 0.35, 1.3, 8);
+    if (ph >= 4) push('zealot', ph * 0.35, 1.2, 9);
+    if (ph >= 5) push('drummer', 1, 2.0, 4);
+    if (ph >= 7) push('runner', 8, 0.3, 11);
   } else if (ch === 4) {
     push('zealot', 6 + ph * 0.5, 0.8, 0);
     push('golem', 2 + ph * 0.2, 1.9, 4);
     push('assassin', 2 + ph * 0.3, 1.1, 7);
-    push('bat', 7 + ph * 0.4, 0.4, 2);
-    if (ph >= 4) push('shield', 6, 0.9, 9);
+    if (ph >= 2) push('shade', 2 + ph * 0.3, 1.0, 2);
+    if (ph >= 3) push('siege', 1 + Math.floor(ph / 4), 2.2, 5);
+    if (ph >= 3) push('bat', 7 + ph * 0.4, 0.4, 1);
+    if (ph >= 4) push('warder', 4, 0.9, 9);
+    if (ph >= 5) push('sprite', 8, 0.4, 10);
     if (ph >= 5) push('splitter', 4, 1.1, 11);
+    if (ph >= 6) push('beast', 1, 2.6, 3);
   } else {
     push('goblin', 8 + ph, 0.32, 0);
     push('orc', 6 + ph * 0.45, 0.55, 1);
     push('zealot', 4 + ph * 0.35, 0.8, 3);
     push('wraith', 5, 0.7, 8);
+    if (ph >= 2) push('sprite', 6 + ph * 0.4, 0.45, 6);
     if (ph >= 3) push('golem', 3 + ph * 0.2, 1.6, 5);
+    if (ph >= 3) push('shade', 4, 0.8, 9);
     if (ph >= 4) push('shaman', 2, 1.0, 10);
-    if (ph >= 4) push('shield', 4, 0.9, 12);
+    if (ph >= 4) push('knight', 4, 1.0, 12);
+    if (ph >= 4) push('siege', 2, 2.0, 4);
+    if (ph >= 5) push('beast', 2, 2.4, 2);
+    if (ph >= 6) push('drummer', 2, 2.2, 7);
+    if (ph >= 6) push('bomber', 6, 0.35, 13);
   }
   return g;
 }
@@ -851,6 +883,8 @@ class Enemy {
     this.poison = null; this.burnUntil = 0; this.burnDps = 0; this.poisonAcc = 0;
     this.healCd = RR(1.2, 2.6); this.regenAcc = 0;
     this.novaCd = 5.5; this.blinkCd = 6.5; this.shieldCd = 9; this.shieldUntil = 0;
+    this.phaseT = RR(0, 3); this.phased = false;
+    this.siegeCd = RR(2.4, 4.2);
     this.splitDone = false; this.raged = false;
     this.gimmick = def.gimmick || null;
     this.dead = false;
@@ -867,6 +901,12 @@ class Enemy {
     }
     if (this.gimmick === 'rage' && this.raged) s *= 1.4;
     if (this.def.zealot && this.hp < this.maxHp * 0.35) s *= 1.45;
+    if (!this.def.aura && this.dist > 0) {
+      for (const d of game.enemies) {
+        if (d === this || d.dead || !d.def.aura) continue;
+        if (hyp(d.x - this.x, d.y - this.y) <= d.def.aura.r) { s *= d.def.aura.spd; break; }
+      }
+    }
     return s;
   }
   update(dt) {
@@ -914,6 +954,40 @@ class Enemy {
         }
         if (healed) { fxRing(this.x, this.y, 'rgba(140,240,120,', 80, 0.5, 2); SFX.heal(); }
       }
+    }
+    // 潜影：周期性不可锁定（技能仍可命中）
+    if (this.def.phase) {
+      this.phaseT += dt;
+      const ph = this.def.phase;
+      this.phased = (this.phaseT % (ph.on + ph.off)) < ph.on;
+    }
+    // 攻城兽：远程吐光束瘫痪防御塔
+    if (this.def.siege && this.dist > 0) {
+      this.siegeCd -= dt;
+      if (this.siegeCd <= 0) {
+        const sg = this.def.siege;
+        let best = null, bd = 1e9;
+        for (const t of game.towers) {
+          if (t.taseUntil > game.time + 0.6) continue;
+          const d = hyp(t.x - this.x, t.y - this.y);
+          if (d <= sg.range && d < bd) { bd = d; best = t; }
+        }
+        if (best) {
+          this.siegeCd = sg.cd;
+          best.taseUntil = game.time + sg.t;
+          for (let i = 0; i < 7; i++) {
+            const q = i / 6;
+            fxParticle(this.x + (best.x - this.x) * q, this.y - 10 + (best.y - 14 - this.y + 10) * q, RR(-14, 14), RR(-14, 14), 0.22, 3.4, 'rgba(255,170,80,.95)');
+          }
+          fxRing(best.x, best.y - 10, 'rgba(255,170,80,', 26, 0.4, 2.4);
+          addText(best.x, best.y - 30, '瘫痪！', '#ffb054', 11, -30);
+          SFX.siege();
+        } else this.siegeCd = 0.7;
+      }
+    }
+    // 战鼓光环脉动视觉
+    if (this.def.aura && this.dist > 0 && RT() < dt * 1.6) {
+      game.pulses.push({ x: this.x, y: this.y, t: 0, life: 0.8, maxr: this.def.aura.r, color: 'rgba(230,90,60,', width: 1.6, flat: true });
     }
     // boss 妖术
     if (this.boss) {
@@ -987,6 +1061,8 @@ class Enemy {
       if (this.def.physRes) amount *= (1 - this.def.physRes);
     } else {
       amount *= 1 - Math.min(0.7, this.mr * 0.05);
+      if (this.def.magicRes) amount *= (1 - this.def.magicRes);
+      if (this.def.magicVuln) amount *= this.def.magicVuln;
     }
     this.hp -= amount;
     this.hitFlash = game.time + 0.12;
@@ -1050,6 +1126,18 @@ class Enemy {
         for (let i = 0; i < this.def.split.n; i++) spawnEnemy(this.def.split.type, { atDist: this.dist - i * 13, fromSplit: 1 });
       }
       if (!this.def.fromSplit) SFX.coin();
+      if (this.def.boom) {
+        const bm = this.def.boom;
+        let stunned = 0;
+        for (const t of game.towers) {
+          if (hyp(t.x - this.x, t.y - this.y) <= bm.r) { t.taseUntil = Math.max(t.taseUntil, game.time + bm.t); stunned++; }
+        }
+        fxBurst(this.x, this.y, 'rgba(255,150,60,.95)', 14, 130, 5, 0.5);
+        game.pulses.push({ x: this.x, y: this.y, t: 0, life: 0.45, maxr: bm.r, color: 'rgba(255,140,60,', width: 3, flat: true });
+        game.shake = Math.min(8, game.shake + 2.4);
+        if (stunned) addText(this.x, this.y - 22, '自爆！', '#ffab5e', 13, -34);
+        SFX.thoom();
+      }
     }
     if (game.gold >= 3000) ach('rich');
     void o;
@@ -1113,6 +1201,7 @@ class Projectile {
       if (isL) { SFX.thoom(); game.shake = Math.min(9, game.shake + 3); }
       for (const e of game.enemies) {
         if (e.dead) continue;
+        if (e.phased && e !== tg) continue;
         if (this.ground && e.fly) continue;
         const dd = hyp(e.x - x, e.y - (y - this.alt));
         if (dd <= sr + e.r) {
@@ -1182,7 +1271,7 @@ class Tower {
     let best = null, bestD = -1, bboss = null, bbD = -1;
     const rg = this.range();
     for (const e of game.enemies) {
-      if (e.dead || e.dist < -4) continue;
+      if (e.dead || e.dist < -4 || e.phased) continue;
       if (groundOnly && e.fly) continue;
       if (hyp(e.x - this.x, e.y - this.y) <= rg + e.r) {
         if (e.boss) { if (e.dist > bbD) { bbD = e.dist; bboss = e; } }
@@ -1206,7 +1295,7 @@ class Tower {
       const rg = this.range();
       let tgt = null, td = 1e9, tb = null, tbD = 1e9;
       for (const e of game.enemies) {
-        if (e.dead || e.dist < -4) continue;
+        if (e.dead || e.dist < -4 || e.phased) continue;
         const d = hyp(e.x - this.x, e.y - this.y);
         if (d >= rg + e.r) continue;
         if (e.boss) { if (d < tbD) { tbD = d; tb = e; } }
@@ -1247,7 +1336,7 @@ class Tower {
       const tgts = [];
       const rg = this.range();
       for (const e of game.enemies) {
-        if (e.dead || e.dist < -4) continue;
+        if (e.dead || e.dist < -4 || e.phased) continue;
         if (hyp(e.x - this.x, e.y - this.y) <= rg + e.r) tgts.push(e);
       }
       if (!tgts.length || this.cd > 0) return;
@@ -1258,7 +1347,7 @@ class Tower {
       for (const e of tgts) {
         damageEnemy(e, tier.dmg * mul, 'magic', {});
         if (!e.dead) {
-          if (tier.freeze && RT() < tier.freeze) { e.freezeUntil = game.time + 0.9; if (RT() < 0.5) addText(e.x, e.y - e.r - 8, '冻结', '#a8e6ff', 10, -26); }
+          if (tier.freeze && RT() < tier.freeze) { e.freezeUntil = game.time + 0.9 * (1 - (e.def.freezeRes || 0)); if (RT() < 0.5) addText(e.x, e.y - e.r - 8, '冻结', '#a8e6ff', 10, -26); }
           else e.applySlow(tier.slow, tier.sdur);
         }
       }
@@ -1366,7 +1455,7 @@ function castSpell(id, x, y) {
     let n = 0;
     for (const e of game.enemies) {
       if (e.dead || e.dist < -4) continue;
-      e.freezeUntil = Math.max(e.freezeUntil, game.time + 1.8);
+      e.freezeUntil = Math.max(e.freezeUntil, game.time + 1.8 * (1 - (e.def.freezeRes || 0)));
       e.applySlow(0.4, 4.4);
       n++;
       if (RT() < 0.3) fxParticle(e.x + RR(-8, 8), e.y - RR(4, 16), RR(-10, 10), RR(-30, -10), 0.8, 3, 'rgba(200,240,255,.9)', 30);
@@ -1639,7 +1728,7 @@ const $ = id => document.getElementById(id);
 const el = {
   gold: $('gold'), lives: $('lives'), wave: $('wave'), chapter: $('chapter'),
   cards: $('cards'), boonChips: $('boonChips'),
-  ovTitle: $('ovTitle'), ovBoon: $('ovBoon'), ovEnd: $('ovEnd'), ovAch: $('ovAch'), ovHelp: $('ovHelp'),
+  ovTitle: $('ovTitle'), ovBoon: $('ovBoon'), ovEnd: $('ovEnd'), ovAch: $('ovAch'), ovHelp: $('ovHelp'), ovCodex: $('ovCodex'),
   boonCards: $('boonCards'), endTitle: $('endTitle'), endStats: $('endStats'),
   endBtns: $('endBtns'), achList: $('achList'), achCount: $('achCount'),
   btnWave: $('btnWave'), btnPause: $('btnPause'), btnSpeed: $('btnSpeed'),
@@ -1786,6 +1875,71 @@ function renderAch() {
   }).join('');
 }
 
+/* ---------------- 怪物图鉴 ---------------- */
+const CODEX = [
+  ['常规部队', [
+    ['goblin', '成群杂兵，任何塔都能清'], ['wolf', '快速地面——霜语塔减速'], ['runner', '极速流——溅射+减速伺候'],
+    ['orc', '前期肉盾——便宜塔处理'], ['zealot', '残血狂暴提速——一套爆发带走'], ['assassin', '漏怪扣 2 血——别留防空级盲区'],
+  ]],
+  ['重甲与法印', [
+    ['shield', '物理减伤 50%——燃烬/腐毒是答案'], ['knight', '重甲 −37% 物理、魔法 +40% 受伤——法塔盛宴'],
+    ['warder', '魔法减伤 80%——劲弩/轰击/破城打它'], ['golem', '重甲血厚——魔法与破城更疼'],
+    ['beast', '血牛·六成冰抗——集火或陨石'], ['siege', '远程光束瘫痪塔——塔散开摆，Q 点杀'],
+  ]],
+  ['异术与空袭', [
+    ['bat', '轻飞行——留意对空火力盲区'], ['wraith', '抗魔飞行——物理塔更疼'], ['sprite', '极速空袭群——对空 dps 要足'],
+    ['shade', '周期性不可被塔锁定——陨石/暴雪照样命中'], ['bomber', '死亡爆炸瘫痪周围塔——塔位别挤'],
+    ['drummer', '光环令全体敌军 +22% 移速——优先爆发'], ['shaman', '祭司群疗——先杀治疗'],
+    ['splitter', '死后分裂三份——溅射处理'],
+  ]],
+  ['魔族首领', [
+    [null, '狂怒', 'B1'], [null, '再生', 'B2'], [null, '塔麻痹', 'B3'], [null, '瞬移飞行', 'B4'], [null, '分裂碎片', 'B5'], [null, '完全体', 'B6'],
+  ]],
+];
+const BOSS_TIPS = { B1: '半血狂怒提速——留减速', B2: '持续回血——爆发终结别拖', B3: '周期性全场塔麻痹——攒技能', B4: '瞬移飞行——纯对空火力决战', B5: '死后分裂碎片——溅射收尾', B6: '硬化+分裂+护航——全力一战' };
+function codexProxy(k, bk) {
+  const def = bk ? BOSSES[parseInt(bk.slice(1), 10) - 1] : ENEMY[k];
+  return {
+    type: bk || k, def, boss: !!bk, gimmick: def.gimmick || null,
+    x: 20, y: 23, r: Math.min(def.r, bk ? 10.5 : 10), fly: !!def.fly, facing: 1,
+    wob: 1.3, phased: false, affix: null, hitFlash: 0, freezeUntil: 0, stunUntil: 0, slowUntil: 0, slowF: 0,
+    poison: null, burnUntil: 0, hp: def.hp, maxHp: def.hp, dist: 6, bossIdx: bk ? parseInt(bk.slice(1), 10) - 1 : null,
+    raged: false, shieldUntil: 0,
+  };
+}
+function renderCodex() {
+  const list = $('codexList');
+  list.innerHTML = '';
+  const time = Date.now() / 1000;
+  for (const [sec, entries] of CODEX) {
+    const h = document.createElement('div');
+    h.className = 'cdxSec'; h.textContent = sec;
+    list.appendChild(h);
+    for (const en of entries) {
+      const isBoss = en.length === 3;
+      const key = isBoss ? en[2] : en[0];
+      const e = codexProxy(isBoss ? null : key, isBoss ? key : null);
+      const tip = isBoss ? BOSS_TIPS[key] : en[1];
+      const row = document.createElement('div');
+      row.className = 'cdxRow' + (isBoss ? ' boss' : '');
+      const cv = document.createElement('canvas');
+      cv.width = 40; cv.height = 30;
+      const cx = cv.getContext('2d');
+      cx.save();
+      try { drawEnemy(cx, e, time); } catch (err) { void err; }
+      cx.restore();
+      const nm = document.createElement('b'); nm.textContent = e.def.name;
+      const tx = document.createElement('span'); tx.className = 'ct'; tx.textContent = tip;
+      row.appendChild(cv); row.appendChild(nm); row.appendChild(tx);
+      list.appendChild(row);
+    }
+  }
+  const fr = document.createElement('div');
+  fr.className = 'achRow';
+  fr.innerHTML = '<span class="ai">✦</span><b>精英词缀</b><span class="ad">狂暴 +28% 速 · 硬化 +10 甲 · 疾风 +35% 速 −30% 血（12 波后 7% 概率）</span>';
+  list.appendChild(fr);
+}
+
 /* ---------------- 结算 UI ---------------- */
 function showEnd(win) {
   const s = game.stats;
@@ -1915,6 +2069,7 @@ window.addEventListener('keydown', ev => {
   else if (k === 'u' && game.sel) upgradeTower(game.sel);
   else if (k === 's' && game.sel) sellTower(game.sel);
   else if (k === 'a') { renderAch(); showOv('ovAch'); }
+  else if (k === 'b') { renderCodex(); showOv('ovCodex'); }
 });
 el.btnWave.addEventListener('click', () => { SFX.init(); nextWave(); });
 el.btnPause.addEventListener('click', () => togglePause());
@@ -1922,6 +2077,8 @@ el.btnSpeed.addEventListener('click', cycleSpeed);
 $('btnMute').addEventListener('click', () => { SFX.init(); SFX.muted = !SFX.muted; $('btnMute').textContent = SFX.muted ? '🔇' : '🔊'; });
 $('btnAch').addEventListener('click', () => { renderAch(); showOv('ovAch'); });
 $('btnCloseAch').addEventListener('click', () => hideOv('ovAch'));
+$('btnCodex').addEventListener('click', () => { renderCodex(); showOv('ovCodex'); });
+$('btnCloseCodex').addEventListener('click', () => hideOv('ovCodex'));
 for (const id of SPELL_ORDER) {
   const b = $('sp_' + id);
   if (!b) continue;
@@ -2076,7 +2233,7 @@ function drawEnemy(c, e, time) {
   // 翅膀（飞行）
   if (e.fly) {
     const wa = Math.sin(e.wob * 1.6) * 0.9;
-    c.fillStyle = e.gimmick === 'blink' ? 'rgba(120,90,190,.75)' : e.type === 'wraith' ? 'rgba(160,225,255,.32)' : 'rgba(150,110,210,.6)';
+    c.fillStyle = e.gimmick === 'blink' ? 'rgba(120,90,190,.75)' : e.type === 'wraith' ? 'rgba(160,225,255,.32)' : e.type === 'sprite' ? 'rgba(170,245,255,.55)' : 'rgba(150,110,210,.6)';
     for (const sgn of [-1, 1]) {
       c.save(); c.rotate(sgn * (0.5 + wa * 0.5));
       c.beginPath(); c.moveTo(0, -2); c.quadraticCurveTo(-r * 1.7 * sgn, -r * 1.1, -r * 2.1 * sgn, r * 0.2); c.quadraticCurveTo(-r * sgn, r * 0.1, 0, r * 0.3); c.closePath(); c.fill();
@@ -2085,8 +2242,9 @@ function drawEnemy(c, e, time) {
   }
   // 主体形状分类
   const type = e.type;
+  if (e.phased) c.globalAlpha = 0.34;
   c.fillStyle = body;
-  if (['goblin', 'orc', 'zealot', 'shaman', 'assassin', 'shield'].includes(type)) {
+  if (['goblin', 'orc', 'zealot', 'shaman', 'assassin', 'shield', 'knight', 'warder', 'drummer', 'runner', 'shade'].includes(type)) {
     c.beginPath(); c.ellipse(0, 0, r * 0.86, r, 0, 0, TAU); c.fill();
     c.fillStyle = dark;
     c.beginPath(); c.arc(r * 0.15, -r * 0.55, r * 0.6, 0, TAU); c.fill();
@@ -2111,6 +2269,50 @@ function drawEnemy(c, e, time) {
     if (type === 'assassin' && e.dist > 0) {
       c.fillStyle = 'rgba(120,90,200,.16)';
       c.beginPath(); c.ellipse(-r * 1.4, 0, r * 0.9, r * 0.6, 0, 0, TAU); c.fill();
+    }
+    if (type === 'runner' && e.dist > 0) {
+      c.strokeStyle = 'rgba(230,240,120,.5)'; c.lineWidth = 1.6;
+      for (const off of [-0.4, 0.1, 0.55]) {
+        c.beginPath(); c.moveTo(-r * 1.1, r * off * 2); c.lineTo(-r * (1.9 + Math.sin(e.wob * 3 + off * 9) * 0.3), r * off * 2); c.stroke();
+      }
+    }
+    if (type === 'knight') {
+      c.fillStyle = flash ? '#fff' : '#78828f';
+      c.fillRect(-r * 0.5, -r * 0.35, r * 1.05, r * 1.1);
+      c.strokeStyle = 'rgba(210,225,255,.75)'; c.lineWidth = 1.4;
+      c.beginPath(); c.moveTo(-r * 0.5, -r * 0.05); c.lineTo(r * 0.55, -r * 0.05); c.stroke();
+      c.fillStyle = 'rgba(120,190,255,' + (0.5 + 0.3 * Math.sin(time * 5)) + ')';
+      c.fillRect(r * 0.02, -r * 0.66, r * 0.42, r * 0.12);
+      drawGlow(c, 'rgba(120,190,255,', r * 0.2, -r * 0.6, 8, 0.3 + 0.12 * Math.sin(time * 5));
+    }
+    if (type === 'warder') {
+      c.strokeStyle = 'rgba(190,130,255,.7)'; c.lineWidth = 1.8;
+      const wa2 = time * 2.4;
+      c.beginPath(); c.ellipse(0, -r * 0.1, r * 1.25, r * 0.5, 0, 0, TAU); c.stroke();
+      c.fillStyle = '#e3c6ff';
+      for (const s2 of [0, TAU / 3, TAU * 2 / 3]) {
+        c.beginPath(); c.arc(Math.cos(wa2 + s2) * r * 1.25, -r * 0.1 + Math.sin(wa2 + s2) * r * 0.5, 2.2, 0, TAU); c.fill();
+      }
+    }
+    if (type === 'drummer') {
+      c.fillStyle = '#e6d3ae';
+      c.beginPath(); c.ellipse(r * 0.85, r * 0.1, r * 0.42, r * 0.55, 0, 0, TAU); c.fill();
+      c.fillStyle = '#8a3026';
+      c.beginPath(); c.ellipse(r * 0.85, r * 0.1, r * 0.42, r * 0.16, 0, 0, TAU); c.fill();
+      const beat = Math.abs(Math.sin(time * 6));
+      c.strokeStyle = '#5a4030'; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(r * 0.3, -r * 0.6); c.lineTo(r * 0.75, -r * 0.2 - beat * r * 0.35); c.stroke();
+    }
+    if (type === 'shade') {
+      c.fillStyle = 'rgba(120,160,220,.5)';
+      c.beginPath(); c.moveTo(-r * 0.7, r * 0.3);
+      c.quadraticCurveTo(-r * 0.9, r * 1.4, -r * 0.3, r * 1.1 + Math.sin(e.wob) * 2);
+      c.quadraticCurveTo(0, r * 0.7, r * 0.4, r * 1.2 - Math.sin(e.wob) * 2);
+      c.quadraticCurveTo(r * 0.8, r * 0.4, r * 0.7, r * 0.1); c.fill();
+      if (!e.phased) {
+        c.fillStyle = '#8fd0ff';
+        c.beginPath(); c.arc(r * 0.32, -r * 0.6, r * 0.09, 0, TAU); c.arc(r * 0.05, -r * 0.62, r * 0.09, 0, TAU); c.fill();
+      }
     }
   } else if (['bat', 'wraith'].includes(type)) {
     if (type === 'wraith') {
@@ -2144,6 +2346,50 @@ function drawEnemy(c, e, time) {
     c.beginPath(); c.ellipse(-r * 0.3, -r * 0.2, r * 0.22, r * 0.14, -0.5, 0, TAU); c.fill();
     c.fillStyle = flash ? '#fff' : '#1e2a12';
     c.beginPath(); c.arc(-r * 0.24, 0, r * 0.11, 0, TAU); c.arc(r * 0.22, -r * 0.02, r * 0.11, 0, TAU); c.fill();
+  } else if (type === 'sprite') {
+    c.beginPath(); c.arc(0, 0, r * 0.72, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.85)';
+    c.beginPath(); c.arc(-r * 0.18, -r * 0.16, r * 0.13, 0, TAU); c.arc(r * 0.2, -r * 0.14, r * 0.13, 0, TAU); c.fill();
+    drawGlow(c, 'rgba(150,235,255,', 0, 0, r * 2, 0.4 + 0.2 * Math.sin(time * 8));
+    c.strokeStyle = 'rgba(200,250,255,.6)'; c.lineWidth = 1.4;
+    c.beginPath(); c.arc(0, 0, r * 1.15, e.wob % TAU, (e.wob % TAU) + 1.8); c.stroke();
+  } else if (['beast', 'siege'].includes(type)) {
+    c.beginPath(); c.ellipse(0, 0, r * 1.15, r * 0.85, 0, 0, TAU); c.fill();
+    c.fillStyle = dark;
+    c.beginPath(); c.arc(r * 1.0, -r * 0.3, r * 0.52, 0, TAU); c.fill();
+    const step = Math.sin(e.wob * 1.7);
+    c.strokeStyle = dark; c.lineWidth = r * 0.24;
+    for (const bx of [-0.72, -0.3, 0.35, 0.72]) {
+      c.beginPath(); c.moveTo(r * bx, r * 0.6); c.lineTo(r * bx + (bx < 0 ? step : -step) * 3, r * 1.25); c.stroke();
+    }
+    if (type === 'beast') {
+      c.fillStyle = flash ? '#fff' : '#6d5f4e';
+      for (const sx2 of [-0.55, -0.1, 0.4]) {
+        c.beginPath(); c.moveTo(r * sx2 - r * 0.22, -r * 0.62); c.lineTo(r * sx2, -r * 1.25); c.lineTo(r * sx2 + r * 0.22, -r * 0.62); c.fill();
+      }
+      c.fillStyle = flash ? '#fff' : '#ffdf6e';
+      c.beginPath(); c.arc(r * 1.18, -r * 0.4, r * 0.1, 0, TAU); c.fill();
+      c.fillStyle = '#e8d8b0';
+      c.beginPath(); c.moveTo(r * 1.2, -r * 0.62); c.lineTo(r * 1.55, -r * 1.05); c.lineTo(r * 1.3, -r * 0.45); c.fill();
+    } else {
+      c.fillStyle = flash ? '#fff' : '#4d4234';
+      c.fillRect(r * 1.05, -r * 0.55, r * 0.9, r * 0.36);
+      c.fillStyle = '#ffb054';
+      c.beginPath(); c.arc(r * 1.28, -r * 0.72, r * 0.11, 0, TAU); c.arc(r * 1.78, -r * 0.38, r * 0.09, 0, TAU); c.fill();
+      c.fillStyle = flash ? '#fff' : '#c9bda3';
+      c.beginPath(); c.arc(r * 0.1, -r * 0.55, r * 0.5, Math.PI, 0); c.fill();
+      c.strokeStyle = 'rgba(90,75,55,.8)'; c.lineWidth = 1.6;
+      c.beginPath(); c.moveTo(-r * 0.3, -r * 0.4); c.lineTo(r * 0.5, -r * 0.4); c.stroke();
+    }
+  } else if (type === 'bomber') {
+    c.beginPath(); c.ellipse(0, 0, r, r * 0.85, 0, 0, TAU); c.fill();
+    c.fillStyle = flash ? '#fff' : shade(e.def.body, -38);
+    c.beginPath(); c.ellipse(r * 0.35, -r * 0.1, r * 0.5, r * 0.55, 0, 0, TAU); c.fill();
+    c.strokeStyle = flash ? '#fff' : '#1e1208'; c.lineWidth = 1.4;
+    c.beginPath(); c.moveTo(-r * 0.2, -r * 0.5); c.lineTo(-r * 0.2, r * 0.4); c.stroke();
+    c.fillStyle = 'rgba(30,18,8,.85)';
+    c.beginPath(); c.ellipse(-r * 0.15, 0, r * 0.16, r * 0.7, 0, 0, TAU); c.fill();
+    if (e.dist > 0) drawGlow(c, 'rgba(255,180,70,', r * 0.9, -r * 0.6, 9, 0.5 + 0.4 * Math.sin(time * 14 + e.wob));
   } else if (type === 'golem' || type === 'golemShard') {
     c.fillStyle = body;
     c.fillRect(-r * 0.85, -r * 0.85, r * 1.7, r * 1.7);
@@ -2701,6 +2947,10 @@ if (Q.get('demo') === '1') {
     document.title = 'FATAL ' + window.__cwErr.slice(0, 220);
   }
   if (!document.title.startsWith('FATAL') && window.__cwErr) document.title = 'ERR ' + window.__cwErr;
+} else if (Q.get('codex') === '1') {
+  boot();
+  renderCodex();
+  showOv('ovCodex');
 } else if (Q.get('ui') === '1') {
   try {
     boot();
@@ -2746,6 +2996,10 @@ if (Q.get('demo') === '1') {
     const achOn = !$('ovAch').classList.contains('hidden');
     $('btnCloseAch').click();
     R.push(['achOv', achOn && $('ovAch').classList.contains('hidden')]);
+    $('btnCodex').click();
+    const codexOn = !$('ovCodex').classList.contains('hidden') && $('codexList').children.length > 20;
+    $('btnCloseCodex').click();
+    R.push(['codexOv', codexOn && $('ovCodex').classList.contains('hidden')]);
     for (let i = 0; i < 900; i++) step(1 / 60);
     R.push(['combatOk', game.state === 'play' || game.state === 'over']);
     if (game.state === 'play') {
