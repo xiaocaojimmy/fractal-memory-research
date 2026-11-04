@@ -8,6 +8,7 @@
   :root{--gold:#c9a45a;--gold-hi:#ffd873;--ink:#0c1219;--panel:rgba(13,19,27,.95);--line:#3d5570;--txt:#cfe3ff}
   *{margin:0;padding:0;box-sizing:border-box;user-select:none}
   body{background:radial-gradient(1200px 700px at 50% 30%,#16222e,#0a0f16 75%);color:var(--txt);font-family:"Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+  #app{display:flex;flex-direction:column;align-items:center}
   #hud{width:1280px;display:flex;align-items:center;gap:10px;padding:10px 6px;flex-wrap:nowrap}
   #hud .chip{background:rgba(20,30,42,.9);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:14px;white-space:nowrap}
   #hPop{color:#8fd0ff}
@@ -70,6 +71,7 @@
 </style>
 </head>
 <body>
+  <div id="app">
   <div id="hud">
     <div class="chip">👑 <span id="hLives">12</span></div>
     <div class="chip">◈ <span id="hGold">0</span></div>
@@ -136,6 +138,18 @@
       </div>
     </div>
   </div>
+  </div>
+<script>
+/* 自适应：整块 zoom 缩放（HUD+舞台同步，坐标映射在 evPos 自动正确） */
+(function fit() {
+  var app = document.getElementById('app');
+  function upd() {
+    var s = Math.min((innerWidth - 20) / 1296, (innerHeight - 20) / 606, 1.7);
+    app.style.zoom = Math.max(0.6, s);
+  }
+  addEventListener('resize', upd); upd();
+})();
+</script>
 <script>document.write('<scr' + 'ipt src="throne.js?c=' + (location.search.includes('nocache') ? Math.random() : 1) + '"><\/scr' + 'ipt>');</script>
 </body>
 </html>
