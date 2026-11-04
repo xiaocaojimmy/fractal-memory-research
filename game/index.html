@@ -122,18 +122,28 @@
   .boonC .bd{font-size:13px;color:var(--dim);text-align:center;line-height:1.6}
   .boonhint{margin-top:24px;font-size:12px;color:#6f8296;letter-spacing:2px}
   /* achievement overlay */
-  #ovAch .apanel{width:620px;max-height:560px;background:rgba(13,19,27,.95);border:1px solid #3d5570;border-radius:14px;
+  #ovAch .apanel,#ovCodex .apanel{width:620px;max-height:560px;background:rgba(13,19,27,.95);border:1px solid #3d5570;border-radius:14px;
                  padding:18px 24px;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.7)}
-  #ovAch .ahead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-  #ovAch .ahead .t{font-size:22px;letter-spacing:4px;color:var(--gold-hi)}
+  #ovAch .ahead,#ovCodex .ahead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  #ovAch .ahead .t,#ovCodex .ahead .t{font-size:22px;letter-spacing:4px;color:var(--gold-hi)}
   #achCount{color:var(--cyan);font-size:14px}
+  .cdxsub{color:#66788c;font-size:12px}
   #achList{overflow-y:auto;flex:1;padding-right:6px}
   .achRow{display:flex;align-items:baseline;gap:10px;padding:7px 8px;border-bottom:1px solid #1c2836;font-size:13px;color:#8fa1b5}
   .achRow .ai{font-size:15px}
   .achRow b{color:#c3cfdd;white-space:nowrap}
   .achRow .ad{font-size:12px;color:#66788c;margin-left:auto}
   .achRow.ok{color:#e8dcb8}.achRow.ok b{color:#ffd873}.achRow.ok .ai{color:#ffd873}
-  #ovAch button{align-self:center;margin-top:12px;padding:8px 30px}
+  #ovAch button,#ovCodex button{align-self:center;margin-top:12px;padding:8px 30px}
+  /* bestiary */
+  #ovCodex .apanel.cdx{width:900px;max-height:620px}
+  #codexList{overflow-y:auto;flex:1;padding-right:6px;display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-content:start}
+  .cdxRow{display:flex;align-items:center;gap:9px;padding:5.5px 6px;border-bottom:1px solid #16202c;font-size:12.5px;color:#8fa1b5}
+  .cdxRow canvas{flex:none;border-radius:6px;background:rgba(255,255,255,.03)}
+  .cdxRow b{color:#c9d5e2;white-space:nowrap;font-size:13px}
+  .cdxRow .ct{color:#6d7f93;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cdxRow.boss b{color:#ff9d84}
+  .cdxSec{grid-column:1/-1;margin:10px 0 2px;font-size:12px;letter-spacing:3px;color:var(--cyan);border-bottom:1px solid #23405a;padding-bottom:3px}
   /* ---------- bottom dock ---------- */
   #dock{height:118px;display:flex;align-items:stretch;gap:10px;padding:8px 12px;
         background:linear-gradient(#141d27,#0d141c);border-top:1px solid #000;
@@ -176,6 +186,7 @@
     <button class="tbtn" id="btnSpeed" title="切换速度 (F)">1×</button>
     <button class="tbtn" id="btnPause" title="暂停 (P)">⏸</button>
     <button class="tbtn" id="btnAch" title="成就 (A)">★</button>
+    <button class="tbtn" id="btnCodex" title="怪物图鉴 (B)">📖</button>
     <button class="tbtn" id="btnMute" title="音效开关">🔊</button>
   </div>
   <div id="stage">
@@ -212,8 +223,8 @@
         <b>章节</b>：每 10 波为一章，换章自动<b>全额回收</b>全部防御塔并可能转移新战场（森林→沙漠→冰原）；新塔随章节解锁（共 9 种）。<br>
         <b>指挥官技能</b>：<span class="k">Q</span> 陨石术（点击区域轰击）&nbsp;<span class="k">W</span> 暴雪（全屏冻结）&nbsp;<span class="k">E</span> 圣所急救（+2 生命）。<br>
         <b>祝福</b>：每 5 波三选一，永久叠加，组合出你的流派。<br>
-        <b>操作</b>：<span class="k">1~9</span> 选塔&nbsp;<span class="k">左键</span> 放置/选中&nbsp;<span class="k">右键</span><span class="k">Esc</span> 取消&nbsp;<span class="k">空格</span> 召唤下一波&nbsp;<span class="k">U</span> 升级&nbsp;<span class="k">S</span> 出售&nbsp;<span class="k">P</span> 暂停&nbsp;<span class="k">F</span> 加速&nbsp;<span class="k">A</span> 成就。Shift+放置可连放。<br>
-        <b>克制</b>：轰击/破城只打地面；持盾抗物理、怨灵抗魔法；祭司群疗、刺客漏 2 血——看清楚再布防。
+        <b>操作</b>：<span class="k">1~9</span> 选塔&nbsp;<span class="k">左键</span> 放置/选中&nbsp;<span class="k">右键</span><span class="k">Esc</span> 取消&nbsp;<span class="k">空格</span> 召唤下一波&nbsp;<span class="k">U</span> 升级&nbsp;<span class="k">S</span> 出售&nbsp;<span class="k">P</span> 暂停&nbsp;<span class="k">F</span> 加速&nbsp;<span class="k">A</span> 成就&nbsp;<span class="k">B</span> 怪物图鉴。Shift+放置可连放。<br>
+        <b>克制</b>：轰击/破城只打地面；持盾抗物理、怨灵抗魔法；<b>黑铠骑士重甲惧法、缚魂破法者反弹魔法</b>；自爆甲虫与攻城兽会<b>瘫痪塔位</b>（塔别扎堆）；潜影行者周期隐身（技能可打）；祭司群疗、刺客漏 2 血——按 <span class="k">B</span> 查图鉴再布防。
       </div>
       <button class="ghostbtn" id="btnCloseHelp">明白了</button>
     </div>
@@ -236,6 +247,14 @@
         <div class="ahead"><span class="t">成就</span><span id="achCount">0 / 20</span></div>
         <div id="achList"></div>
         <button id="btnCloseAch">关闭</button>
+      </div>
+    </div>
+    <!-- bestiary -->
+    <div class="ov hidden" id="ovCodex">
+      <div class="apanel cdx">
+        <div class="ahead"><span class="t">怪物图鉴</span><span class="cdxsub">看清克制，布防不慌 · 悬停塔卡看数据</span></div>
+        <div id="codexList"></div>
+        <button id="btnCloseCodex">关闭</button>
       </div>
     </div>
   </div>
