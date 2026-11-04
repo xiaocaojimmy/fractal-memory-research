@@ -713,9 +713,9 @@ function waveGroups(n) {
     if (ph >= 6) push('beast', 1, 2.6, 3);
     if (ph >= 7) push('siege', 1, 2.4, 8);
   } else {
-    push('goblin', 8 + ph, 0.32, 0);
-    push('orc', 6 + ph * 0.45, 0.55, 1);
-    push('zealot', 4 + ph * 0.35, 0.8, 3);
+    push('goblin', 6 + ph * 0.7, 0.32, 0);
+    push('orc', 5 + ph * 0.35, 0.55, 1);
+    push('zealot', 3 + ph * 0.3, 0.8, 3);
     push('wraith', 3, 0.8, 8);
     if (ph >= 2) push('sprite', 4 + ph * 0.3, 0.55, 6);
     if (ph >= 3) push('golem', 2 + ph * 0.2, 1.6, 5);
@@ -734,6 +734,13 @@ function waveBossIdx(n) {
   if (n > TOTAL_WAVES) return n % 5 === 0 ? (Math.floor(n / 5) - 1) % 6 : -1;
   return n % 10 === 0 ? (n / 10 - 1) : -1;
 }
+/* 波次词缀：w15 起每波随机一条，逼玩家按波配塔 */
+const WMODS = [
+  { id: 'swift', name: '疾行军潮', desc: '敌军移速 +15%', spd: 1.15, color: '#ffd873' },
+  { id: 'iron', name: '玄铁军列', desc: '敌护甲 +18%', armor: 1.18, color: '#b8c4d8' },
+  { id: 'hex', name: '抗魔结界', desc: '敌法抗 +6', mr: 6, color: '#a98fe8' },
+  { id: 'hulk', name: '坚韧军团', desc: '敌生命 +20%', hp: 1.2, color: '#8fdc7a' },
+];
 
 /* ---------------- achievements ---------------- */
 const ACH = [
@@ -787,6 +794,7 @@ const game = {
   chapterLeaks: 0, waveLeaks: 0, savedMeta: store.meta(),
   stats: { kills: 0, gold: 0, spent: 0, built: 0, bossKills: 0, spells: 0, noleakWaves: 0 },
   totalKills: 0,
+  waveMod: null, bloodMoon: false, lastBMwave: -3, combo: 0, comboBest: 0, bonusDmg: 0, masteryPending: null, slowT: 0,
 };
 for (let i = 0; i < 24; i++) {
   game.flyies.push({ x: RR(0, W), y: RR(0, H), p: RR(0, TAU), sp: RR(6, 16), q: RR(0, TAU) });
@@ -797,7 +805,7 @@ function boonN(id) { return game.boons[id] || 0; }
 function boonSum() {
   const b = game.boons;
   return {
-    dmg: 1 + 0.08 * (b.dmg8 || 0),
+    dmg: (1 + 0.08 * (b.dmg8 || 0)) * (1 + (game.bonusDmg || 0)),
     gold: 1 + 0.12 * (b.gold12 || 0),
     range: 1 + 0.07 * (b.range7 || 0),
     espd: Math.pow(0.94, b.slow6 || 0),
@@ -855,7 +863,7 @@ class Enemy {
     const B = boonSum();
     const D = DIFFS[game.diff];
     const n = game.wave;
-    let hp = def.hp * Math.pow(1.085, n - 1);
+    let hp = def.hp * Math.pow(1.087, n - 1);
     if (this.boss) {
       const s = Math.pow(1.105, Math.min(n, 28) - 1) * Math.pow(1.015, Math.max(0, n - 28));
       hp = def.hp * s * D.boss * (def.hpMul || 1);
@@ -869,16 +877,21 @@ class Enemy {
       const af = AFFIXES[this.affix];
       spdMul *= af.spd; armor += af.armor; hp *= (af.hpMul || 1);
     }
+    if (def.fly) hp *= 0.85;
+    if (!this.boss) {
+      const wm = game.waveMod;
+      if (wm) { if (wm.hp) hp *= wm.hp; if (wm.spd) spdMul *= wm.spd; if (wm.armor) armor = Math.round(armor * wm.armor); if (wm.mr) mr += wm.mr; }
+      if (game.bloodMoon) { hp *= 1.2; spdMul *= 1.15; }
+    }
     this.hp = this.maxHp = Math.round(hp * (o.hpMul || 1) * D.hp);
     this.armor = armor; this.mr = mr;
     this.fly = !!def.fly;
-    if (this.fly) hp *= 0.85;
     this.flyAmp = this.fly ? (this.boss ? 22 : RR(46, 86)) : 0;
     this.flyCyc = RR(2.2, 3.4); this.flyPh = RR(0, TAU);
     this.pLen = this.fly ? MAP.FLY.len : MAP.len;
     this.leak = def.leak || 1;
     this.r = def.r;
-    this.gold = Math.round((def.gold || 5) * Math.min(3, 1 + n * 0.012) * (this.boss ? 1 : 1));
+    this.gold = Math.round((def.gold || 5) * Math.min(3, 1 + n * 0.012) * (game.bloodMoon && !this.boss ? 1.5 : 1));
     this.spdBase = def.spd * spdMul;
     this.dist = -(o.distOff || RR(0, 10));
     const p = this.pos(Math.max(0, this.dist));
@@ -887,6 +900,7 @@ class Enemy {
     this.wob = RR(0, TAU); this.facing = 1;
     this.slowUntil = 0; this.slowF = 0;
     this.freezeUntil = 0; this.stunUntil = 0;
+    this.shockUntil = 0; this.reactCd = 0;
     this.hitFlash = 0;
     this.poison = null; this.burnUntil = 0; this.burnDps = 0; this.poisonAcc = 0;
     this.healCd = RR(1.2, 2.6); this.regenAcc = 0;
@@ -1106,6 +1120,8 @@ class Enemy {
   }
   leakOut() {
     this.dead = true;
+    if (game.combo >= 10) addText(MAP.CORE.x, MAP.CORE.y - 54, '连击中断', '#ff7a6b', 13, -30);
+    game.combo = 0;
     window.__LEAKS = window.__LEAKS || {};
     window.__LEAKS[this.type] = (window.__LEAKS[this.type] || 0) + this.leak;
     game.lives -= this.leak;
@@ -1123,7 +1139,10 @@ class Enemy {
     if (this.dead) return;
     this.dead = true;
     const B = boonSum();
-    const g = Math.round(this.gold * B.gold);
+    game.combo++;
+    if (game.combo > game.comboBest) game.comboBest = game.combo;
+    const g = Math.round(this.gold * B.gold * (1 + Math.min(0.5, game.combo * 0.012)));
+    if (game.combo >= 10 && game.combo % 10 === 0) addText(this.x, this.y - this.r - 20, game.combo + ' 连杀！', '#ffcf5e', 15, -38);
     game.gold += g;
     game.stats.gold += g; game.stats.kills++;
     game.totalKills++; game.savedMeta.kills = (game.savedMeta.kills || 0) + 1;
@@ -1139,6 +1158,7 @@ class Enemy {
       ach('boss_c' + (this.bossIdx + 1));
       game.banner = { txt: this.def.name + ' 已陨落', sub: '+ ' + g + ' ◈', t: 0, life: 3, big: true, color: '#ffd873' };
       game.shake = Math.min(12, game.shake + 7);
+      game.slowT = 0.5;
       SFX.ding();
       store.putSave(null);
     } else {
@@ -1251,6 +1271,56 @@ function damageEnemy(e, dmg, kind, o = {}) {
   if (B.crit > 0 && RT() < B.crit) { d *= 2; addText(e.x + RR(-6, 6), e.y - e.r - 14, '暴击', '#ff7a6b', 11, -36); }
   e.hit(d, kind, { pierce: o.pierce, big: o.big, ignoreShield: o.ignoreShield });
   if (o.poison && !e.dead) e.applyPoison(o.poison, o.poisonCap || 8);
+  const src = o.src || (o.source && o.source.type);
+  if (src === 'arc' && !e.dead) e.shockUntil = game.time + 2;
+  if (!o.noReact) reactCheck(e, src, kind, d);
+}
+/* 元素反应：碎裂(冰+物理)/爆燃(毒+火)/蒸发(冰+火)/毒力传导(电+毒) */
+function reactCheck(e, src, kind, d) {
+  if (e.dead || game.time < e.reactCd) return;
+  const t = game.time;
+  const frozen = e.freezeUntil > t;
+  const poisoned = e.poison && e.poison.until > t;
+  if (kind === 'phys' && frozen) {
+    e.reactCd = t + 0.4;
+    const bonus = Math.min(2000, 40 + (e.maxHp - e.hp) * 0.16);
+    e.freezeUntil = 0;
+    e.hp -= bonus; e.hitFlash = t + 0.12;
+    fxRing(e.x, e.y - (e.fly ? 8 : 0), 'rgba(189,239,255,', e.r + 30, 0.4, 3);
+    fxBurst(e.x, e.y, 'rgba(200,240,255,.9)', 10, 130, 4, 0.45);
+    addText(e.x, e.y - e.r - 18, '碎裂 ' + fmt(bonus), '#bdefff', 14, -44);
+    SFX.zap();
+    if (e.hp <= 0) e.die({});
+  } else if (src === 'flame' && poisoned) {
+    e.reactCd = t + 0.4;
+    const p = e.poison;
+    const bonus = p.perTick * Math.min(6, p.stacks) * 1.6;
+    e.poison = null;
+    e.hp -= bonus; e.hitFlash = t + 0.12;
+    fxBurst(e.x, e.y - 6, 'rgba(255,150,60,.95)', 14, 150, 4.5, 0.5);
+    game.shake = Math.min(6, game.shake + 1.2);
+    addText(e.x, e.y - e.r - 18, '爆燃 ' + fmt(bonus), '#ffab5e', 14, -44);
+    SFX.thoom();
+    if (e.hp <= 0) e.die({});
+  } else if (src === 'flame' && frozen) {
+    e.reactCd = t + 0.6;
+    e.freezeUntil = 0;
+    for (const o2 of game.enemies) if (!o2.dead && o2 !== e && hyp(o2.x - e.x, o2.y - e.y) <= 120) o2.applySlow(0.3, 2);
+    fxRing(e.x, e.y, 'rgba(235,246,255,', 120, 0.5, 2.2);
+    addText(e.x, e.y - e.r - 18, '蒸发', '#eaf6ff', 13, -40);
+  } else if (src === 'arc' && poisoned) {
+    e.reactCd = t + 0.5;
+    let hops = 0;
+    for (const o2 of game.enemies) {
+      if (hops >= 3 || o2 === e || o2.dead || o2.phased || o2.dist < -4) continue;
+      if (hyp(o2.x - e.x, o2.y - e.y) <= 124) {
+        damageEnemy(o2, Math.max(12, d * 0.45), 'magic', { noReact: 1 });
+        addBeam([[e.x, e.y - 10], [o2.x, o2.y - 10]], 'rgba(176,232,110,', 0.16, 2.2);
+        hops++;
+      }
+    }
+    if (hops) addText(e.x, e.y - e.r - 18, '毒力传导', '#b8f088', 13, -40);
+  }
 }
 
 /* ---------------- Tower ---------------- */
@@ -1259,6 +1329,7 @@ class Tower {
     this.type = type; this.c = c; this.r = r;
     this.x = c * CELL + 16; this.y = r * CELL + 16;
     this.level = 0;
+    this.mastery = 0;
     this.invested = TOWERS[type].cost;
     this.cd = RR(0, 0.3);
     this.angle = -Math.PI / 2;
@@ -1270,10 +1341,12 @@ class Tower {
     this.recoil = 0;
   }
   tier() { return TOWERS[this.type].tiers[this.level]; }
-  range() { return this.tier().range * boonSum().range; }
+  mastered() { return this.mastery > 0 && this.level >= 3; }
+  range() { return this.tier().range * boonSum().range * (this.mastered() && this.mastery === 1 ? 0.94 : this.mastered() && this.mastery === 2 ? 1.12 : 1); }
   canFire() { return game.time >= this.taseUntil; }
   dmgMul() {
     let m = boonSum().dmg;
+    if (this.mastered() && this.mastery === 1) m *= 1.3;
     for (const t of game.towers) {
       if (t.type !== 'banner' || t === this) continue;
       const bt = t.tier();
@@ -1329,7 +1402,7 @@ class Tower {
       this.angle = Math.atan2(tgt.y - this.y, tgt.x - this.x);
       this.flameOn = game.time + 0.15;
       if (this.cd > 0) return;
-      this.cd = tier.cd;
+      this.cd = tier.cd * (this.mastered() && this.mastery === 2 ? 0.78 : 1);
       const mul = this.dmgMul();
       const half = 0.54;
       let any = false;
@@ -1341,7 +1414,7 @@ class Tower {
         let da = Math.atan2(dy, dx) - this.angle;
         while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU;
         if (Math.abs(da) <= half) {
-          damageEnemy(e, tier.dmg * mul, 'magic', {});
+          damageEnemy(e, tier.dmg * mul, 'magic', { src: 'flame' });
           if (tier.burn && !e.dead) { e.burnDps = Math.max(e.burnDps * 0.9, tier.dmg * mul * tier.burn * 0.5); e.burnUntil = game.time + 2.2; }
           any = true;
         }
@@ -1363,7 +1436,7 @@ class Tower {
         if (hyp(e.x - this.x, e.y - this.y) <= rg + e.r) tgts.push(e);
       }
       if (!tgts.length || this.cd > 0) return;
-      this.cd = tier.cd;
+      this.cd = tier.cd * (this.mastered() && this.mastery === 2 ? 0.78 : 1);
       const mul = this.dmgMul();
       fxRing(this.x, this.y, 'rgba(150,230,255,', rg, 0.4, 2.4);
       SFX.frost();
@@ -1442,7 +1515,7 @@ class Tower {
       let muld = 1;
       for (const e of chain) {
         pts.push([e.x, e.y + (e.fly ? -16 : 0)]);
-        damageEnemy(e, tier.dmg * mul * muld, 'magic', {});
+        damageEnemy(e, tier.dmg * mul * muld, 'magic', { src: 'arc' });
         muld *= 0.85;
       }
       addBeam(pts, 'rgba(255,230,110,', 0.13, 2.2);
@@ -1502,10 +1575,12 @@ function resetRun(diff) {
   game.diff = diff;
   game.state = 'play';
   game.mapIdx = 0;
-  game.gold = 300;
+  game.gold = 260;
   game.lives = DIFFS[diff].lives;
   game.wave = 0;
   game.waveActive = false;
+  game.waveMod = null; game.bloodMoon = false; game.lastBMwave = -3;
+  game.combo = 0; game.comboBest = 0; game.bonusDmg = 0; game.masteryPending = null;
   game.speed = 1; game.paused = false; game.time = 0;
   game.shake = 0; game.vign = 0; game.vignSnow = 0; game.coreHit = -9;
   game.enemies = []; game.towers = []; game.projectiles = []; game.beams = [];
@@ -1540,7 +1615,7 @@ function startRun(diff, resumeFrom) {
     for (const t of (s.towers || [])) {
       if (!TOWERS[t.type]) continue;
       const tw = new Tower(t.type, t.c, t.r);
-      tw.level = t.lvl; tw.invested = t.inv;
+      tw.level = t.lvl; tw.invested = t.inv; tw.mastery = t.m || 0;
       game.towers.push(tw);
     }
     game.banner = { txt: '继续作战 · 第 ' + game.wave + ' 波', sub: DIFFS[diff].name + '难度', t: 0, life: 2.4, color: '#9fdcff' };
@@ -1557,6 +1632,19 @@ function nextWave() {
   game.waveActive = true;
   game.waveT = 0;
   game.waveLeaks = 0;
+  game.waveMod = null; game.bloodMoon = false;
+  if (game.wave >= 15 && waveBossIdx(game.wave) < 0) {
+    game.waveMod = WMODS[Math.floor(RT() * WMODS.length)];
+  }
+  if (game.wave >= 8 && waveBossIdx(game.wave) < 0 && game.wave > game.lastBMwave + 2 && RT() < 0.24) {
+    game.bloodMoon = true; game.lastBMwave = game.wave;
+    window.__BM = (window.__BM || '') + game.wave + ' ';
+    game.banner = { txt: '血月降临', sub: '魔族狂化 生命/移速/赏金强化 · 清场缴获 + 全局塔伤累积', t: 0, life: 2.8, big: true, color: '#ff8a5e' };
+    game.shake = Math.min(9, game.shake + 4);
+    SFX.horn();
+  } else if (game.waveMod) {
+    addText(W / 2, 150, '波次词缀 · ' + game.waveMod.name + '：' + game.waveMod.desc, game.waveMod.color, 14, -30);
+  }
   if (boonN('wavegold')) { game.gold += 25; addText(W / 2, 130, '战争债券 +25 ◈', '#ffcf5e', 13, -20); }
   const groups = waveGroups(game.wave);
   game.spawnQueue = [];
@@ -1594,6 +1682,13 @@ function endWave() {
     const extra = 10 + game.wave;
     game.gold += extra;
     addText(W / 2, 134, '完美防守 +' + extra + ' ◈', '#8fdc7a', 13, -22);
+  }
+  if (game.bloodMoon) {
+    const bg = 120 + game.wave * 6;
+    game.gold += bg; game.stats.gold += bg;
+    game.bonusDmg += 0.015;
+    addText(W / 2, 158, '血月缴获 +' + bg + ' ◈ · 塔伤永久 +1.5%', '#ff9a6b', 14, -26);
+    SFX.ding();
   }
   if (game.wave % 10 === 0 && game.chapterLeaks === 0) ach('noleak_chapter');
   if (game.wave >= TOTAL_WAVES && !game.endless) { winCampaign(); return; }
@@ -1653,7 +1748,7 @@ function saveCheckpoint() {
     v: 2, diff: game.diff, wave: game.wave, gold: game.gold, lives: game.lives,
     boons: game.boons, boonPicks: game.boonPicks, map: game.mapIdx,
     stats: game.stats,
-    towers: game.towers.map(t => ({ type: t.type, c: t.c, r: t.r, lvl: t.level, inv: t.invested })),
+    towers: game.towers.map(t => ({ type: t.type, c: t.c, r: t.r, lvl: t.level, inv: t.invested, m: t.mastery })),
   });
 }
 
@@ -1704,6 +1799,36 @@ function placeTower(c, r, type) {
   syncHud(); refreshCards();
   return true;
 }
+/* 专精分支：满级塔觉醒二选一 */
+const MASTERY_NAMES = {
+  arrow: ['穿甲雨矢', '连弩疾风'], frost: ['极寒符印', '疾风冰阵'], cannon: ['轰爆核心', '疾速炮阵'],
+  arc: ['雷狱超载', '疾流导引'], poison: ['瘟疫之核', '疾瘴喷涌'], prism: ['光核聚焦', '疾光阵列'],
+  flame: ['焚世炎心', '疾焰风炉'], siege: ['灭国一击', '连发石械'], banner: ['战魂增幅', '疾令旌旗'],
+};
+function openMasteryUI(t) {
+  game.masteryPending = t;
+  const ov = el.ovMastery;
+  const names = MASTERY_NAMES[t.type] || ['毁灭', '疾风'];
+  ov.querySelector('.mstTitle').textContent = TOWERS[t.type].name + ' 满级觉醒 · 选择专精（永久）';
+  const cards = ov.querySelectorAll('.mstCard');
+  cards[0].innerHTML = '<div class="mstName">' + names[0] + '</div><div class="mstFx">毁灭 · 伤害 +30% · 射程 −6%</div><div class="mstKey">按 1 选择</div>';
+  cards[1].innerHTML = '<div class="mstName">' + names[1] + '</div><div class="mstFx">疾风 · 攻速 +28% · 射程 +12%</div><div class="mstKey">按 2 选择</div>';
+  ov.dataset.tower = game.towers.indexOf(t);
+  showOv('ovMastery');
+}
+function pickMastery(i) {
+  const t = game.masteryPending;
+  if (!t) return;
+  t.mastery = i;
+  game.masteryPending = null;
+  game.paused = false;
+  hideOv('ovMastery');
+  SFX.ding();
+  fxRing(t.x, t.y, 'rgba(255,220,120,', 60, 0.6, 4);
+  addText(t.x, t.y - 26, (MASTERY_NAMES[t.type] || ['', ''])[i - 1] + '！', '#ffd873', 14, -30);
+  refreshSel(); syncHud();
+}
+
 function upgradeTower(t) {
   if (!t || t.level >= 3) return false;
   const cost = t.tier().up;
@@ -1712,6 +1837,10 @@ function upgradeTower(t) {
   game.stats.spent += cost;
   t.invested += cost;
   t.level++;
+  if (t.level === 3 && !t.mastery) {
+    if (typeof SIM_N !== 'undefined' && SIM_N > 0) t.mastery = DUMB ? 0 : (game.towers.indexOf(t) % 2) ? 1 : 2;
+    else { game.masteryPending = t; game.paused = true; openMasteryUI(t); }
+  }
   SFX.place();
   fxRing(t.x, t.y, 'rgba(255,230,140,', 46, 0.4, 3);
   const kinds = new Set(game.towers.map(tt => tt.type));
@@ -1751,7 +1880,7 @@ const $ = id => document.getElementById(id);
 const el = {
   gold: $('gold'), lives: $('lives'), wave: $('wave'), chapter: $('chapter'),
   cards: $('cards'), boonChips: $('boonChips'),
-  ovTitle: $('ovTitle'), ovBoon: $('ovBoon'), ovEnd: $('ovEnd'), ovAch: $('ovAch'), ovHelp: $('ovHelp'), ovCodex: $('ovCodex'),
+  ovTitle: $('ovTitle'), ovBoon: $('ovBoon'), ovEnd: $('ovEnd'), ovAch: $('ovAch'), ovHelp: $('ovHelp'), ovCodex: $('ovCodex'), ovMastery: $('ovMastery'),
   boonCards: $('boonCards'), endTitle: $('endTitle'), endStats: $('endStats'),
   endBtns: $('endBtns'), achList: $('achList'), achCount: $('achCount'),
   btnWave: $('btnWave'), btnPause: $('btnPause'), btnSpeed: $('btnSpeed'),
@@ -1768,8 +1897,10 @@ function syncHud() {
   el.lives.textContent = game.lives;
   const tot = game.endless ? '∞' : TOTAL_WAVES;
   const ch = game.endless ? '无尽模式' : CHAPTERS[Math.min(5, Math.floor(game.wave / 10))].name.split('·')[1] || '';
-  el.wave.textContent = '第 ' + game.wave + ' / ' + tot + ' 波';
-  el.chapter.textContent = ch;
+  el.wave.textContent = '第 ' + game.wave + ' / ' + tot + ' 波' + (game.bloodMoon ? ' 🌑血月' : game.waveMod ? ' ·' + game.waveMod.name : '');
+  el.wave.style.color = game.bloodMoon ? '#ff9a6b' : game.waveMod ? game.waveMod.color : '';
+  el.chapter.textContent = ch + (game.combo >= 5 && game.waveActive ? ' · ⚡' + game.combo + '连杀' : '');
+  el.chapter.style.color = game.combo >= 15 ? '#ffcf5e' : '';
   el.btnSpeed.textContent = game.speed + '×';
   el.btnPause.textContent = game.paused ? '▶' : '⏸';
   el.btnWave.disabled = game.waveActive || !!game.boonMode;
@@ -1864,7 +1995,10 @@ function refreshSel() {
   $('selInfo').textContent = info.join(' · ');
   const ub = $('selUp'), sb = $('selSell');
   if (t.level >= 3) {
-    ub.textContent = '已满级 ★'; ub.disabled = true;
+    const mn = t.mastery ? ' ★' + (MASTERY_NAMES[t.type] || ['', ''])[t.mastery - 1] : '';
+    ub.textContent = t.mastery ? '已觉醒' + mn : '待觉醒 · 点击升级'; 
+    ub.disabled = !!t.mastery;
+    if (!t.mastery) ub.addEventListener('click', () => { game.masteryPending = t; game.paused = true; openMasteryUI(t); }, { once: true });
   } else {
     const nx = d.tiers[t.level + 1];
     ub.innerHTML = '升级 ◈' + tier.up + '<br><span class="mut">' + (d.kind === 'none' ? '光环→+' + Math.round(nx.aura * 100) + '%' : '伤害→' + nx.dmg) + (nx.twin ? ' 连发' : '') + (nx.stun ? ' 眩晕' : '') + (nx.freeze ? ' 冻结' : '') + (nx.fork ? ' 折射' : '') + (nx.burn ? ' 灼烧' : '') + (nx.haste ? ' 攻速' : '') + '</span>';
@@ -2078,6 +2212,7 @@ window.addEventListener('keydown', ev => {
   if (k === ' ' && game.state === 'play' && !game.boonMode) { ev.preventDefault(); if (!game.waveActive) nextWave(); return; }
   if (k === 'escape') { game.build = null; game.aimSpell = null; game.sel = null; hideSel(); syncHud(); return; }
   if (game.state !== 'play' || game.boonMode) return;
+  if (game.masteryPending && (k === '1' || k === '2')) { pickMastery(parseInt(k, 10)); return; }
   if (k >= '1' && k <= '9') {
     const idx = parseInt(k, 10) - 1;
     const t = TOWER_ORDER[idx];
@@ -2102,6 +2237,9 @@ $('btnAch').addEventListener('click', () => { renderAch(); showOv('ovAch'); });
 $('btnCloseAch').addEventListener('click', () => hideOv('ovAch'));
 $('btnCodex').addEventListener('click', () => { renderCodex(); showOv('ovCodex'); });
 $('btnCloseCodex').addEventListener('click', () => hideOv('ovCodex'));
+for (const card of document.querySelectorAll('.mstCard')) {
+  card.addEventListener('click', () => pickMastery(parseInt(card.dataset.m, 10)));
+}
 for (const id of SPELL_ORDER) {
   const b = $('sp_' + id);
   if (!b) continue;
@@ -2655,6 +2793,25 @@ function render(time) {
     c.fillText('点击轰击（右键取消）', game.mouseX, game.mouseY + 112);
   }
   c.restore(); // shake
+  // 血月氛围：全屏红雾 + 边缘加深
+  if (game.bloodMoon && game.waveActive) {
+    c.fillStyle = 'rgba(140,26,20,.10)';
+    c.fillRect(0, 0, W, H);
+    const gb = c.createRadialGradient(W / 2, H / 2, H * 0.30, W / 2, H / 2, H * 0.80);
+    gb.addColorStop(0, 'rgba(120,10,6,0)');
+    gb.addColorStop(1, 'rgba(120,10,6,.30)');
+    c.fillStyle = gb;
+    c.fillRect(0, 0, W, H);
+  }
+  // 濒死搏动（命≤5）
+  if (game.state === 'play' && game.lives <= 5 && game.lives > 0) {
+    const pv = 0.10 + 0.07 * Math.sin(game.time * 3.2);
+    const gp = c.createRadialGradient(W / 2, H / 2, H * 0.40, W / 2, H / 2, H * 0.80);
+    gp.addColorStop(0, 'rgba(255,30,20,0)');
+    gp.addColorStop(1, 'rgba(255,30,20,' + pv + ')');
+    c.fillStyle = gp;
+    c.fillRect(0, 0, W, H);
+  }
   // 受击红晕
   if (game.vign > 0.01) {
     const g2 = c.createRadialGradient(W / 2, H / 2, H * 0.42, W / 2, H / 2, H * 0.78);
@@ -2766,6 +2923,7 @@ function tick(now) {
   rafId = requestAnimationFrame(tick);
   let dt = Math.min(0.06, (now - lastT) / 1000);
   lastT = now;
+  if (game.slowT > 0) { game.slowT = Math.max(0, game.slowT - dt); dt *= 0.28; }
   if (game.state === 'play' && !game.paused && !game.boonMode) {
     const steps = game.speed > 1 ? game.speed : 1;
     const sdt = game.speed > 1 ? dt : dt;
@@ -2843,6 +3001,7 @@ window.addEventListener('error', ev => {
 /* ---------------- demo / sim hooks ---------------- */
 const Q = new URLSearchParams(location.search);
 const SIM_N = parseInt(Q.get('sim') || '0', 10);
+const DUMB = Q.get('dumb') === '1';
 const SIM_W = parseInt(Q.get('w') || '0', 10);
 const SIM_SEL = Q.get('sel') || '';
 const SIM_DIFF = Q.get('d') || 'normal';
@@ -2883,6 +3042,11 @@ function runSim(n) {
       if (d >= 33 && d <= 88) road.push({ c, r, d: d + hyp(x - MAP.CORE.x, y - MAP.CORE.y) * 0.002 });
       const da = distToSeg(x, y, F.segs[0].a, F.segs[0].b);
       if (da < 66 && (d < 33 || d > 88)) air.push({ c, r, d: da });
+    }
+    if (DUMB) {
+      const out2 = [];
+      for (const cd of road) { if (out2.length >= 50) break; if (out2.every(o => Math.abs(o.c - cd.c) + Math.abs(o.r - cd.r) >= 2)) out2.push(cd); }
+      return out2.map(cd => ['arrow', cd.c, cd.r]);
     }
     road.sort((a, b) => a.d - b.d);
     air.sort((a, b) => a.d - b.d);
@@ -2953,7 +3117,8 @@ function runSim(n) {
     slots: BUY.length,
     endless: game.endless,
   };
-  document.title = ('SIM ' + JSON.stringify(window.__SIM) + (Q.get('probe') ? (window.__WLOG ? ' W:' + String(window.__WLOG).slice(-430) + ' BS:' + (window.__BS || '') : ' BS:' + (window.__BS || '')) : ' LEAKS:' + JSON.stringify(window.__LEAKS || {}) + ' BOSS:' + (window.__BOSS || '')) + (Q.get('dbg') === '1' ? ' DBG:bi=' + bi + ' towers:' + game.towers.map(t => t.type[0] + (t.level + 1)).join('') : '')).slice(0, 900);
+  document.title = ('SIM ' + JSON.stringify(window.__SIM) + ' BM:' + (window.__BM || '-')).slice(0, 900) + (Q.get('probe') ? (window.__WLOG ? ' W:' + String(window.__WLOG).slice(-430) + ' BS:' + (window.__BS || '') : ' BS:' + (window.__BS || '')) : ' LEAKS:' + JSON.stringify(window.__LEAKS || {}) + ' BOSS:' + (window.__BOSS || '')) + (Q.get('dbg') === '1' ? ' DBG:bi=' + bi + ' towers:' + game.towers.map(t => t.type[0] + (t.level + 1)).join('') : '');
+  document.title = document.title.slice(0, 900);
 }
 if (Q.get('demo') === '1') {
   boot();
@@ -2995,6 +3160,16 @@ if (Q.get('demo') === '1') {
   boot();
   renderCodex();
   showOv('ovCodex');
+} else if (Q.get('mastery') === '1') {
+  boot();
+  startRun('normal', null);
+  game.gold = 9999;
+  let mc = -1, mr2 = -1;
+  outer3: for (let r3 = 0; r3 < ROWS; r3++) for (let c3 = 0; c3 < COLS; c3++) if (canPlace(c3, r3)) { mc = c3; mr2 = r3; break outer3; }
+  placeTower(mc, mr2, 'arrow');
+  const mt = game.towers[0];
+  mt.level = 3; mt.mastery = 0;
+  openMasteryUI(mt);
 } else if (Q.get('ui') === '1') {
   try {
     boot();
@@ -3017,6 +3192,11 @@ if (Q.get('demo') === '1') {
     R.push(['sel', game.sel === game.towers[0] && !$('sel').classList.contains('hidden')]);
     $('selUp').click();
     R.push(['upgrade', game.towers[0].level === 1]);
+    game.towers[0].level = 3; game.towers[0].mastery = 0;
+    openMasteryUI(game.towers[0]);
+    R.push(['mstOv', !$('ovMastery').classList.contains('hidden') && game.masteryPending === game.towers[0]]);
+    pickMastery(2);
+    R.push(['mstPick', game.towers[0].mastery === 2 && $('ovMastery').classList.contains('hidden') && !game.paused]);
     $('selSell').click();
     R.push(['sell', game.towers.length === 0]);
     key('q');
