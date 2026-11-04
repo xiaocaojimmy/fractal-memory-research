@@ -796,6 +796,7 @@ const game = {
   totalKills: 0,
   waveMod: null, bloodMoon: false, lastBMwave: -3, combo: 0, comboBest: 0, bonusDmg: 0, masteryPending: null, slowT: 0,
   keptMastery: {},
+  fundDmg: 0, fundHaste: 0, fundLife: 0,
 };
 for (let i = 0; i < 24; i++) {
   game.flyies.push({ x: RR(0, W), y: RR(0, H), p: RR(0, TAU), sp: RR(6, 16), q: RR(0, TAU) });
@@ -806,7 +807,7 @@ function boonN(id) { return game.boons[id] || 0; }
 function boonSum() {
   const b = game.boons;
   return {
-    dmg: (1 + 0.08 * (b.dmg8 || 0)) * (1 + (game.bonusDmg || 0)),
+    dmg: (1 + 0.08 * (b.dmg8 || 0)) * (1 + (game.bonusDmg || 0)) * (1 + 0.05 * (game.fundDmg || 0)),
     gold: 1 + 0.12 * (b.gold12 || 0),
     range: 1 + 0.07 * (b.range7 || 0),
     espd: Math.pow(0.94, b.slow6 || 0),
@@ -1362,12 +1363,13 @@ class Tower {
     return m;
   }
   hasteMul() {
+    const fh = 1 + 0.05 * (game.fundHaste || 0);
     for (const t of game.towers) {
       if (t.type !== 'banner' || t === this) continue;
       const bt = t.tier();
-      if (bt.haste && hyp(t.x - this.x, t.y - this.y) <= bt.range * boonSum().range) return 1 + bt.haste;
+      if (bt.haste && hyp(t.x - this.x, t.y - this.y) <= bt.range * boonSum().range) return (1 + bt.haste) * fh;
     }
-    return 1;
+    return fh;
   }
   findTarget(groundOnly) {
     let best = null, bestD = -1, bboss = null, bbD = -1;
@@ -1589,6 +1591,7 @@ function resetRun(diff) {
   game.waveMod = null; game.bloodMoon = false; game.lastBMwave = -3;
   game.combo = 0; game.comboBest = 0; game.bonusDmg = 0; game.masteryPending = null;
   game.keptMastery = {}; game.slowT = 0;
+  game.fundDmg = 0; game.fundHaste = 0; game.fundLife = 0;
   game.speed = 1; game.paused = false; game.time = 0;
   game.shake = 0; game.vign = 0; game.vignSnow = 0; game.coreHit = -9;
   game.enemies = []; game.towers = []; game.projectiles = []; game.beams = [];
@@ -1616,6 +1619,7 @@ function startRun(diff, resumeFrom) {
     game.boonPicks = s.boonPicks || 0;
     game.keptMastery = s.keptMastery || {};
     game.bonusDmg = s.bonusDmg || 0;
+    game.fundDmg = s.fundDmg || 0; game.fundHaste = s.fundHaste || 0; game.fundLife = s.fundLife || 0;
     game.mapIdx = s.map || 0;
     game.stats = s.stats || game.stats;
     loadMap(game.mapIdx);
@@ -1771,6 +1775,7 @@ function saveCheckpoint() {
     v: 2, diff: game.diff, wave: game.wave, gold: game.gold, lives: game.lives,
     boons: game.boons, boonPicks: game.boonPicks, map: game.mapIdx,
     keptMastery: game.keptMastery, bonusDmg: game.bonusDmg,
+    fundDmg: game.fundDmg, fundHaste: game.fundHaste, fundLife: game.fundLife,
     stats: game.stats,
     towers: game.towers.map(t => ({ type: t.type, c: t.c, r: t.r, lvl: t.level, inv: t.invested, m: t.mastery })),
   });
@@ -1813,6 +1818,39 @@ function towerCap() {
   if (game.endless) cap += 2 * Math.floor(Math.max(0, game.wave - TOTAL_WAVES) / 10);
   return cap;
 }
+/* 军费：后期金币出口——直接购买全局战力 */
+const FUNDS = {
+  dmg: { name: '军火补给', desc: '全塔伤害 +5%', base: 900, step: 250, get n() { return game.fundDmg; } },
+  haste: { name: '战鼓动员', desc: '全塔攻速 +5%', base: 900, step: 250, get n() { return game.fundHaste; } },
+  life: { name: '要塞增援', desc: '生命 +1', base: 1500, step: 750, get n() { return game.fundLife; } },
+};
+function fundCost(k) { const f = FUNDS[k]; return Math.round(f.base + f.step * f.n); }
+function fundTry(k, slack) {
+  const cost = fundCost(k);
+  if (game.gold < cost + (slack || 0)) return false;
+  game.gold -= cost;
+  if (k === 'dmg') game.fundDmg++;
+  else if (k === 'haste') game.fundHaste++;
+  else { game.fundLife++; game.lives += 1; }
+  SFX.ding();
+  addText(W / 2, 122, FUNDS[k].name + ' · ' + FUNDS[k].desc, '#ffd873', 14, -30);
+  return true;
+}
+function refreshFund() {
+  for (const k of ['dmg', 'haste', 'life']) {
+    const row = document.querySelector('.fundRow[data-f="' + k + '"]');
+    if (!row) continue;
+    const cost = fundCost(k);
+    row.querySelector('.fundCost').textContent = cost + ' ◈';
+    row.classList.toggle('off', game.gold < cost);
+    row.querySelector('.fundN').textContent = '×' + FUNDS[k].n;
+  }
+}
+function toggleFund() {
+  if ($('ovFund').classList.contains('hidden')) { refreshFund(); showOv('ovFund'); }
+  else hideOv('ovFund');
+}
+setInterval(() => { const ov = document.getElementById('ovFund'); if (ov && !ov.classList.contains('hidden') && typeof refreshFund === 'function') refreshFund(); }, 500);
 function placeTower(c, r, type) {
   const def = TOWERS[type];
   if (!def || !game.unlocked.has(type)) return false;
@@ -1924,7 +1962,7 @@ const $ = id => document.getElementById(id);
 const el = {
   gold: $('gold'), lives: $('lives'), wave: $('wave'), chapter: $('chapter'),
   cards: $('cards'), boonChips: $('boonChips'),
-  ovTitle: $('ovTitle'), ovBoon: $('ovBoon'), ovEnd: $('ovEnd'), ovAch: $('ovAch'), ovHelp: $('ovHelp'), ovCodex: $('ovCodex'), ovMastery: $('ovMastery'),
+  ovTitle: $('ovTitle'), ovBoon: $('ovBoon'), ovEnd: $('ovEnd'), ovAch: $('ovAch'), ovHelp: $('ovHelp'), ovCodex: $('ovCodex'), ovMastery: $('ovMastery'), ovFund: $('ovFund'),
   boonCards: $('boonCards'), endTitle: $('endTitle'), endStats: $('endStats'),
   endBtns: $('endBtns'), achList: $('achList'), achCount: $('achCount'),
   btnWave: $('btnWave'), btnPause: $('btnPause'), btnSpeed: $('btnSpeed'),
@@ -2252,7 +2290,8 @@ window.addEventListener('keydown', ev => {
   if (ev.repeat) return;
   const k = ev.key.toLowerCase();
   if (k === ' ' && game.state === 'play' && !game.boonMode) { ev.preventDefault(); if (!game.waveActive) nextWave(); return; }
-  if (k === 'escape') { game.build = null; game.aimSpell = null; game.sel = null; hideSel(); syncHud(); return; }
+  if (k === 'escape') { game.build = null; game.aimSpell = null; game.sel = null; hideSel(); if (el.ovFund && !el.ovFund.classList.contains('hidden')) hideOv('ovFund'); syncHud(); return; }
+  if (k === 'g' && game.state === 'play' && !game.boonMode) { toggleFund(); return; }
   if (game.state !== 'play' || game.boonMode) return;
   if (game.masteryPending && (k === '1' || k === '2')) { pickMastery(parseInt(k, 10)); return; }
   if (game.masteryPending && k === '3') { const kp = game.keptMastery[game.masteryPending.type]; if (kp) pickMastery(kp); return; }
@@ -2280,6 +2319,15 @@ $('btnAch').addEventListener('click', () => { renderAch(); showOv('ovAch'); });
 $('btnCloseAch').addEventListener('click', () => hideOv('ovAch'));
 $('btnCodex').addEventListener('click', () => { renderCodex(); showOv('ovCodex'); });
 $('btnCloseCodex').addEventListener('click', () => hideOv('ovCodex'));
+$('btnFund').addEventListener('click', toggleFund);
+$('btnCloseFund').addEventListener('click', () => hideOv('ovFund'));
+for (const row of document.querySelectorAll('.fundRow')) {
+  row.addEventListener('click', () => {
+    if (fundTry(row.dataset.f, 0)) {
+      refreshFund(); syncHud();
+    }
+  });
+}
 for (const card of document.querySelectorAll('.mstCard')) {
   card.addEventListener('click', () => pickMastery(parseInt(card.dataset.m, 10)));
 }
@@ -3143,6 +3191,10 @@ function runSim(n) {
         }
       }
       if (!game.waveActive) {
+        if (game.gold > 4200) {
+          if (game.wave > 28 && game.gold > 10000) fundTry('life', 5000);
+          if (!fundTry('dmg', 1500)) fundTry('haste', 1500);
+        }
         let upg = true;
         while (upg) {
           upg = false;
@@ -3237,6 +3289,13 @@ if (Q.get('demo') === '1') {
   hideOv('ovTitle');
   game.gold = 9999; game.wave = 14; game.waveActive = true;
   for (let i = 0; i < 6; i++) spawnEnemy('orc', { elite: i === 2 ? 1 : 0, distOff: -(200 - i * 55) });
+} else if (Q.get('fundshot') === '1') {
+  boot();
+  startRun('normal', null);
+  hideOv('ovTitle');
+  game.gold = 5200;
+  fundTry('dmg'); fundTry('dmg'); fundTry('haste');
+  toggleFund();
 } else if (Q.get('ui') === '1') {
   try {
     boot();
@@ -3288,6 +3347,12 @@ if (Q.get('demo') === '1') {
     const sp = game.speed;
     el.btnSpeed.click();
     R.push(['pause', pz && !game.paused, 'speed', sp === 2]);
+    el.btnFund.click();
+    R.push(['fundOv', !$('ovFund').classList.contains('hidden')]);
+    game.gold = 5000;
+    fundTry('dmg');
+    R.push(['fundBuy', game.fundDmg === 1 && boonSum().dmg > 1.05]);
+    $('btnCloseFund').click();
     openBoons();
     R.push(['boonOv', !!game.boonMode && !$('ovBoon').classList.contains('hidden')]);
     $('boonCards').querySelector('.boonC').click();
