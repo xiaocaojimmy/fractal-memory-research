@@ -198,7 +198,9 @@ function loadMap(idx) {
     if (hyp(x - CORE.x, y - CORE.y) < 74) blocked.add(cellKey(c, r));
     if (hyp(x - pts[0].x, y - pts[0].y) < 62) blocked.add(cellKey(c, r));
   }
-  MAP = { idx, def, pts, segs, len, CORE, decor: null, bg: null };
+  const flen = hyp(CORE.x - pts[0].x, CORE.y - pts[0].y);
+  const fsegs = [{ a: pts[0], b: CORE, len: flen || 1, acc: 0 }];
+  MAP = { idx, def, pts, segs, len, CORE, FLY: { segs: fsegs, len: flen || 1 }, decor: null, bg: null };
   MAP.decor = genDecor(idx, def.kind);
   MAP.bg = buildBackground(MAP);
   return MAP;
@@ -497,7 +499,7 @@ const BOSSES = [
   { name: '兽人督军', hp: 1900, spd: 22, armor: 8, mr: 4, gold: 170, leak: 4, r: 22, body: '#b06a3a', gimmick: 'rage' },
   { name: '双头巨魔', hp: 3400, spd: 18, armor: 9, mr: 4, gold: 230, leak: 5, r: 24, body: '#7fa063', gimmick: 'regen' },
   { name: '冰霜巨人', hp: 4400, spd: 17, armor: 10, mr: 8, gold: 300, leak: 5, r: 24, body: '#6fc3e8', gimmick: 'nova' },
-  { name: '影刃魔王', hp: 3300, hpMul: 0.6, spd: 22, armor: 5, mr: 10, gold: 360, leak: 5, r: 22, body: '#7a5fb0', fly: true, gimmick: 'blink' },
+  { name: '影刃魔王', hp: 3300, hpMul: 0.35, spd: 15, armor: 5, mr: 10, gold: 360, leak: 5, r: 22, body: '#7a5fb0', fly: true, gimmick: 'blink' },
   { name: '岩石巨像', hp: 6800, spd: 16, armor: 14, mr: 2, gold: 440, leak: 6, r: 27, body: '#93a0ad', gimmick: 'split50', split: { type: 'golemShard', n: 4 } },
   { name: '魔王巴尔·完全体', hp: 9200, spd: 17, armor: 13, mr: 12, gold: 640, leak: 8, r: 27, body: '#d0453a', gimmick: 'final' },
 ];
@@ -624,7 +626,7 @@ const BOONS = [
   { id: 'splash8', name: '装药强化', desc: '溅射范围 +8%', color: '#ffab76' },
 ];
 const CHAPTERS = [
-  { name: '第一章 · 边境哨线', map: 0, unlock: ['arrow', 'frost', 'cannon'], msg: '魔族前锋试探边境，弩手与霜塔是最初的盾。' },
+  { name: '第一章 · 边境哨线', map: 0, unlock: ['arrow', 'frost', 'cannon'], msg: '魔族前锋试探边境——留意第 5 波起掠空的石像蝠，它们不沿路走，直飞水晶。' },
   { name: '第二章 · 幽暗林道', map: 0, unlock: ['arc', 'poison'], msg: '狼群与疾足奔行者出没林间，小心自爆甲虫炸瘫塔位——弧光与腐毒解禁。' },
   { name: '第三章 · 黄沙遗迹', map: 1, unlock: ['prism', 'flame'], msg: '黑铠骑士重甲惧法，正好交给棱镜与燃烬；岩背戈伦皮糙厚，减速集火。' },
   { name: '第四章 · 风暴回廊', map: 1, unlock: ['siege'], msg: '缚魂破法者反弹魔法——物理塔回归；疾风精灵空袭，战鼓督军务必优先击杀。' },
@@ -658,8 +660,8 @@ function waveGroups(n) {
   if (ph === 10) {
     push('B' + (ch + 1), 1, 0, ch >= 3 ? 10 : 6);
     push('orc', 5 + ch * 2, 0.7, 0);
-    if (ch >= 1) push('bat', 6 + ch, 0.5, 2);
-    if (ch >= 2) push('wraith', 5 + ch, 0.7, 4);
+    if (ch >= 1) push('bat', 4 + ch * 0.6, 0.5, 2);
+    if (ch >= 2) push('wraith', 3 + ch * 0.5, 0.8, 4);
     if (ch >= 2) push('knight', 2 + ch - 1, 1.4, 5);
     if (ch >= 3) push('warder', 2 + Math.floor(ch / 2), 1.5, 6);
     if (ch >= 4) push('golem', 2 + Math.floor(ch / 2), 1.8, 1);
@@ -676,13 +678,13 @@ function waveGroups(n) {
     push('goblin', 8 + ph, 0.6, 0);
     push('wolf', 4 + ph, 0.35, 4);
     if (ph >= 2) push('runner', 2 + ph * 0.6, 0.4, 6);
-    if (ph >= 3) push('wraith', ph * 0.4, 1.1, 9);
-    if (ph >= 4) push('bat', 4 + ph * 0.5, 0.55, 7);
+    if (ph >= 3) push('wraith', ph * 0.28, 1.1, 9);
+    if (ph >= 4) push('bat', 3 + ph * 0.4, 0.6, 7);
     if (ph >= 5) push('bomber', 2 + ph * 0.4, 0.5, 2);
     if (ph >= 7) push('shaman', 1, 1.2, 10);
   } else if (ch === 2) {
     push('orc', 6 + ph, 0.6, 0);
-    push('bat', 5 + ph, 0.45, 3);
+    push('bat', 4 + ph * 0.6, 0.5, 3);
     if (ph >= 2) push('knight', 1 + ph * 0.35, 1.5, 5);
     if (ph >= 4) push('shield', ph * 0.3, 1.5, 8);
     if (ph >= 4) push('runner', 6, 0.35, 10);
@@ -691,7 +693,7 @@ function waveGroups(n) {
     if (ph >= 3) push('shaman', ph * 0.3, 1.4, 6);
   } else if (ch === 3) {
     push('wolf', 8 + ph, 0.32, 0);
-    push('sprite', 4 + ph * 0.7, 0.5, 2);
+    push('sprite', 2 + ph * 0.45, 0.6, 2);
     push('warder', 1 + ph * 0.3, 1.5, 5);
     if (ph >= 2) push('knight', 3, 1.2, 6);
     if (ph >= 3) push('splitter', ph * 0.35, 1.3, 8);
@@ -703,23 +705,25 @@ function waveGroups(n) {
     push('golem', 2 + ph * 0.2, 1.9, 4);
     push('assassin', 2 + ph * 0.3, 1.1, 7);
     if (ph >= 2) push('shade', 2 + ph * 0.3, 1.0, 2);
-    if (ph >= 3) push('siege', 1 + Math.floor(ph / 4), 2.2, 5);
-    if (ph >= 3) push('bat', 7 + ph * 0.4, 0.4, 1);
+    if (ph >= 3) push('siege', 1, 2.4, 5);
+    if (ph >= 3) push('bat', 4 + ph * 0.25, 0.5, 1);
     if (ph >= 4) push('warder', 4, 0.9, 9);
-    if (ph >= 5) push('sprite', 8, 0.4, 10);
+    if (ph >= 5) push('sprite', 5, 0.55, 10);
     if (ph >= 5) push('splitter', 4, 1.1, 11);
     if (ph >= 6) push('beast', 1, 2.6, 3);
+    if (ph >= 7) push('siege', 1, 2.4, 8);
   } else {
     push('goblin', 8 + ph, 0.32, 0);
     push('orc', 6 + ph * 0.45, 0.55, 1);
     push('zealot', 4 + ph * 0.35, 0.8, 3);
-    push('wraith', 5, 0.7, 8);
-    if (ph >= 2) push('sprite', 6 + ph * 0.4, 0.45, 6);
-    if (ph >= 3) push('golem', 3 + ph * 0.2, 1.6, 5);
+    push('wraith', 3, 0.8, 8);
+    if (ph >= 2) push('sprite', 4 + ph * 0.3, 0.55, 6);
+    if (ph >= 3) push('golem', 2 + ph * 0.2, 1.6, 5);
     if (ph >= 3) push('shade', 4, 0.8, 9);
     if (ph >= 4) push('shaman', 2, 1.0, 10);
     if (ph >= 4) push('knight', 4, 1.0, 12);
-    if (ph >= 4) push('siege', 2, 2.0, 4);
+    if (ph >= 4) push('siege', 1, 2.2, 4);
+    if (ph >= 7) push('siege', 1, 2.2, 14);
     if (ph >= 5) push('beast', 2, 2.4, 2);
     if (ph >= 6) push('drummer', 2, 2.2, 7);
     if (ph >= 6) push('bomber', 6, 0.35, 13);
@@ -868,12 +872,16 @@ class Enemy {
     this.hp = this.maxHp = Math.round(hp * (o.hpMul || 1) * D.hp);
     this.armor = armor; this.mr = mr;
     this.fly = !!def.fly;
+    if (this.fly) hp *= 0.85;
+    this.flyAmp = this.fly ? (this.boss ? 22 : RR(46, 86)) : 0;
+    this.flyCyc = RR(2.2, 3.4); this.flyPh = RR(0, TAU);
+    this.pLen = this.fly ? MAP.FLY.len : MAP.len;
     this.leak = def.leak || 1;
     this.r = def.r;
     this.gold = Math.round((def.gold || 5) * Math.min(3, 1 + n * 0.012) * (this.boss ? 1 : 1));
     this.spdBase = def.spd * spdMul;
     this.dist = -(o.distOff || RR(0, 10));
-    const p = posAt(Math.max(0, this.dist));
+    const p = this.pos(Math.max(0, this.dist));
     this.x = p.x; this.y = p.y;
     this.px = p.x; this.py = p.y;
     this.wob = RR(0, TAU); this.facing = 1;
@@ -889,6 +897,20 @@ class Enemy {
     this.gimmick = def.gimmick || null;
     this.dead = false;
   }
+  flyPos(d) {
+    const F = MAP.FLY;
+    d = clamp(d, 0, F.len);
+    let s = F.segs[F.segs.length - 1];
+    for (const sg of F.segs) { if (d <= sg.acc + sg.len) { s = sg; break; } }
+    const t = (d - s.acc) / s.len;
+    const bx = lerp(s.a.x, s.b.x, t), by = lerp(s.a.y, s.b.y, t);
+    const nx = -(s.b.y - s.a.y) / s.len, ny = (s.b.x - s.a.x) / s.len;
+    const gt = d / F.len;
+    const env = Math.sin(Math.PI * clamp(gt, 0.03, 0.97));
+    const off = Math.sin(gt * TAU * this.flyCyc + this.flyPh) * this.flyAmp * env;
+    return { x: bx + nx * off, y: by + ny * off };
+  }
+  pos(d) { return this.fly ? this.flyPos(d) : posAt(d); }
   speedNow() {
     if (this.freezeUntil > game.time || this.stunUntil > game.time) return 0;
     const B = boonSum();
@@ -915,12 +937,12 @@ class Enemy {
     this.px = this.x; this.py = this.y;
     this.dist += sp * dt;
     if (this.dist >= 0) {
-      const p = posAt(this.dist);
+      const p = this.pos(this.dist);
       const dx = p.x - this.x;
       this.facing = Math.abs(dx) > 0.02 ? Math.sign(dx) : this.facing;
       this.x = p.x; this.y = p.y;
     }
-    if (this.dist >= MAP.len - 4) { this.leakOut(); return; }
+    if (this.dist >= this.pLen - 4) { this.leakOut(); return; }
     // DoT
     if (this.poison && this.poison.until > game.time) {
       this.poisonAcc += dt;
@@ -997,7 +1019,7 @@ class Enemy {
       }
       if (window.__PROBE2 && game.wave >= 44 && game.wave <= 46) {
         this.__qacc = (this.__qacc || 0) + dt;
-        if (this.__qacc > 3 && this.dist > 0) { this.__qacc = 0; window.__BS = (window.__BS || '') + 'W' + game.wave + ':' + this.type + 'd' + Math.round(this.dist / MAP.len * 100) + 'h' + Math.round(this.hp / 100) + ';'; }
+        if (this.__qacc > 3 && this.dist > 0) { this.__qacc = 0; window.__BS = (window.__BS || '') + 'W' + game.wave + ':' + this.type + 'd' + Math.round(this.dist / this.pLen * 100) + 'h' + Math.round(this.hp / 100) + ';'; }
       }
       if (this.gimmick === 'rage' && !this.raged && this.hp < this.maxHp * 0.3) {
         this.raged = true;
@@ -1019,10 +1041,10 @@ class Enemy {
         if (this.blinkCd <= 0 && this.dist > 10) {
           this.blinkCd = 8.5;
           for (let i = 0; i < 4; i++) {
-            const q = posAt(this.dist - i * 26);
+            const q = this.pos(this.dist - i * 26);
             game.pulses.push({ x: q.x, y: q.y - 16, t: 0, life: 0.4, maxr: 26, color: 'rgba(160,120,230,', width: 2, flat: false });
           }
-          this.dist += 110;
+          this.dist += this.pLen * 0.05;
           fxBurst(this.x, this.y - 16, 'rgba(160,120,230,.85)', 12, 90, 4, 0.5);
           SFX.zap();
         }
@@ -1092,7 +1114,7 @@ class Enemy {
     game.coreHit = game.time;
     game.vign = 1; game.shake = Math.min(10, game.shake + 5 + this.leak);
     SFX.leak();
-    const p = posAt(MAP.len - 8);
+    const p = this.pos(this.pLen - 8);
     fxBurst(MAP.CORE.x, MAP.CORE.y, 'rgba(255,80,70,.9)', 16, 130, 4, 0.6);
     addText(p.x, p.y - 24, '-' + this.leak + ' 生命', '#ff7a6b', 15, -44);
     if (game.lives <= 0) { game.lives = 0; endGame(false); }
@@ -1150,7 +1172,7 @@ function spawnEnemy(type, o = {}) {
   const e = new Enemy(type, { ...o, bossIdx });
   if (o.atDist != null) {
     e.dist = o.atDist;
-    const p = posAt(Math.max(0, e.dist));
+    const p = e.pos(Math.max(0, e.dist));
     e.x = p.x; e.y = p.y;
   }
   game.enemies.push(e);
@@ -1274,8 +1296,9 @@ class Tower {
       if (e.dead || e.dist < -4 || e.phased) continue;
       if (groundOnly && e.fly) continue;
       if (hyp(e.x - this.x, e.y - this.y) <= rg + e.r) {
-        if (e.boss) { if (e.dist > bbD) { bbD = e.dist; bboss = e; } }
-        if (e.dist > bestD) { bestD = e.dist; best = e; }
+        const prog = e.dist / e.pLen;
+        if (e.boss) { if (prog > bbD) { bbD = prog; bboss = e; } }
+        if (prog > bestD) { bestD = prog; best = e; }
       }
     }
     return bboss || best;
@@ -1886,8 +1909,8 @@ const CODEX = [
     ['warder', '魔法减伤 80%——劲弩/轰击/破城打它'], ['golem', '重甲血厚——魔法与破城更疼'],
     ['beast', '血牛·六成冰抗——集火或陨石'], ['siege', '远程光束瘫痪塔——塔散开摆，Q 点杀'],
   ]],
-  ['异术与空袭', [
-    ['bat', '轻飞行——留意对空火力盲区'], ['wraith', '抗魔飞行——物理塔更疼'], ['sprite', '极速空袭群——对空 dps 要足'],
+  ['异术与空袭（飞行怪直飞水晶）', [
+    ['bat', '轻飞行——S 形直飞，无视道路'], ['wraith', '抗魔飞行——物理塔更疼'], ['sprite', '极速空袭群——对空 dps 要足'],
     ['shade', '周期性不可被塔锁定——陨石/暴雪照样命中'], ['bomber', '死亡爆炸瘫痪周围塔——塔位别挤'],
     ['drummer', '光环令全体敌军 +22% 移速——优先爆发'], ['shaman', '祭司群疗——先杀治疗'],
     ['splitter', '死后分裂三份——溅射处理'],
@@ -2842,21 +2865,42 @@ function runSim(n) {
   startRun(SIM_DIFF, null);
   hideOv('ovTitle');
   const TYPE_CYCLE = ['arrow', 'frost', 'arrow', 'cannon', 'poison', 'arrow', 'flame', 'arc', 'frost', 'prism', 'siege', 'arrow', 'cannon', 'banner', 'poison', 'arc', 'flame', 'prism', 'siege', 'arrow', 'frost', 'cannon', 'arc', 'prism', 'flame', 'siege', 'banner', 'arrow', 'arc', 'flame', 'arrow', 'poison', 'frost', 'cannon', 'arc', 'prism', 'arrow', 'flame', 'siege', 'poison'];
+  function distToSeg(x, y, a, b) {
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const L2 = dx * dx + dy * dy || 1;
+    let t = ((x - a.x) * dx + (y - a.y) * dy) / L2;
+    t = Math.max(0.12, Math.min(0.88, t));
+    return hyp(x - (a.x + t * dx), y - (a.y + t * dy));
+  }
   function planSlots() {
-    const cands = [];
+    const road = [];
+    const air = [];
+    const F = MAP.FLY;
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
       if (blocked.has(cellKey(c, r))) continue;
       const x = c * CELL + 16, y = r * CELL + 16;
       const d = distToPts(x, y, MAP.segs);
-      if (d >= 34 && d <= 76) cands.push({ c, r, d: d + hyp(x - MAP.CORE.x, y - MAP.CORE.y) * 0.002 });
+      if (d >= 33 && d <= 88) road.push({ c, r, d: d + hyp(x - MAP.CORE.x, y - MAP.CORE.y) * 0.002 });
+      const da = distToSeg(x, y, F.segs[0].a, F.segs[0].b);
+      if (da < 66 && (d < 33 || d > 88)) air.push({ c, r, d: da });
     }
-    cands.sort((a, b) => a.d - b.d);
+    road.sort((a, b) => a.d - b.d);
+    air.sort((a, b) => a.d - b.d);
     const out = [];
-    for (const cd of cands) {
-      if (out.length >= 56) break;
-      if (out.every(o => Math.abs(o.c - cd.c) + Math.abs(o.r - cd.r) >= 3)) out.push(cd);
+    const pushUniq = cd => { if (out.length < 70 && out.every(o => Math.abs(o.c - cd.c) + Math.abs(o.r - cd.r) >= 3)) out.push(cd); };
+    let ri = 0, ai2 = 0, airTaken = 0, guard = 0;
+    while (out.length < 70 && guard++ < 500) {
+      const nearAir = airTaken < 26 && ai2 < air.length;
+      if (nearAir && (out.length % 3 === 2)) {
+        const cd = air[ai2++];
+        if (cd && out.every(o => Math.abs(o.c - cd.c) + Math.abs(o.r - cd.r) >= 3)) { out.push({ ...cd, air: true }); airTaken++; }
+        continue;
+      }
+      if (ri < road.length) pushUniq(road[ri++]);
+      else if (nearAir) { const cd = air[ai2++]; if (cd) { out.push({ ...cd, air: true }); airTaken++; } }
+      else break;
     }
-    return out.map((cd, i) => [TYPE_CYCLE[i % TYPE_CYCLE.length], cd.c, cd.r]);
+    return out.map((cd, i) => [cd.air ? 'arrow' : TYPE_CYCLE[i % TYPE_CYCLE.length], cd.c, cd.r]);
   }
   let BUY = planSlots();
   let bi = 0, placeCd = 0, lastMap = game.mapIdx;
@@ -2877,11 +2921,10 @@ function runSim(n) {
         let upg = true;
         while (upg) {
           upg = false;
-          for (const tw of game.towers) {
-            if (tw.level < 3) {
-              const cost = tw.tier().up;
-              if (game.gold > cost + 40 + game.wave * 4) { upgradeTower(tw); upg = true; }
-            }
+          const pool = game.towers.filter(t => t.level < 3).sort((a, b) => a.level - b.level);
+          for (const tw of pool) {
+            const cost = tw.tier().up;
+            if (game.gold > cost + 30) { upgradeTower(tw); upg = true; break; }
           }
         }
         const nextCost = bi < BUY.length ? TOWERS[BUY[bi][0]].cost : 1e9;
@@ -2895,11 +2938,12 @@ function runSim(n) {
     }
     if (game.state === 'play') {
       if (spellReady('meteor')) {
-        const b = game.enemies.find(en => en.boss && !en.dead && en.dist > 0);
+        const b = game.enemies.find(en => en.boss && !en.dead && en.dist > 0)
+          || game.enemies.find(en => !en.dead && en.dist > 0 && (en.def.siege || en.def.aura || en.def.beef));
         const e = b || (game.enemies.length > 12 ? game.enemies.find(en => !en.dead && en.dist > 0) : null);
         if (e) castSpell('meteor', e.x, e.y);
       }
-      if (spellReady('blizzard') && game.enemies.length > 13) castSpell('blizzard');
+      if (spellReady('blizzard') && (game.enemies.length > 13 || game.enemies.filter(en => !en.dead && en.fly && en.dist > 0).length > 5)) castSpell('blizzard');
       if (spellReady('mend') && game.lives <= 5) castSpell('mend');
     }
   }
