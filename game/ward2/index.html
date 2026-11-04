@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>王座防线 Throne Line</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{--gold:#c9a45a;--gold-hi:#ffd873;--ink:#0c1219;--panel:rgba(13,19,27,.95);--line:#3d5570;--txt:#cfe3ff}
+  *{margin:0;padding:0;box-sizing:border-box;user-select:none}
+  body{background:radial-gradient(1200px 700px at 50% 30%,#16222e,#0a0f16 75%);color:var(--txt);font-family:"Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+  #hud{width:1280px;display:flex;align-items:center;gap:10px;padding:10px 6px;flex-wrap:nowrap}
+  #hud .chip{background:rgba(20,30,42,.9);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:14px;white-space:nowrap}
+  #hPop{color:#8fd0ff}
+  #hud .spacer{flex:1}
+  #btnWave{padding:9px 22px;font-size:15px;letter-spacing:2px;color:#0d1117;background:linear-gradient(#8fdc7a,#5aa44a);border:none;border-radius:9px;cursor:pointer;font-weight:700}
+  #btnWave:disabled{filter:grayscale(.7) brightness(.7)}
+  .tbtn{width:36px;height:34px;border-radius:8px;border:1px solid var(--line);background:rgba(22,32,45,.9);color:var(--txt);cursor:pointer;font-size:15px}
+  #stage{position:relative;width:1280px}
+  canvas{display:block;border-radius:12px;border:1px solid #223245;cursor:crosshair}
+  #spells{position:absolute;left:14px;bottom:12px;display:flex;gap:10px;z-index:5}
+  .spell{position:relative;width:52px;height:52px;border-radius:50%;border:2px solid #46627f;background:rgba(16,26,38,.92);color:#9fc2e8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .spell.ready{border-color:#8fd0ff;box-shadow:0 0 12px rgba(120,200,255,.4)}
+  .spell.aiming{border-color:var(--gold-hi)}
+  .spCd{position:absolute;right:-2px;bottom:-4px;font-size:11px;color:#ffd873;background:rgba(0,0,0,.6);border-radius:6px;padding:0 5px}
+  #unitBar{position:absolute;left:214px;bottom:8px;display:flex;gap:8px;z-index:4}
+  .unitCard{position:relative;width:118px;padding:9px 10px;border:1px solid #2c3e52;border-radius:10px;background:rgba(18,28,40,.92);cursor:pointer;transition:border-color .12s,transform .1s;display:flex;flex-direction:column;gap:4px}
+  .unitCard:hover{border-color:#6f92b8;transform:translateY(-2px)}
+  .unitCard.sel{border-color:var(--gold-hi);box-shadow:0 0 10px rgba(255,216,115,.25)}
+  .unitCard.locked{opacity:.38;cursor:default}
+  .unitCard.off .ucCost{color:#ff8a7a}
+  .ucIcon{width:26px;height:26px;border-radius:6px;margin-bottom:2px}
+  .unitCard b{font-size:14px;letter-spacing:2px}
+  .ucCost{font-size:12px;color:var(--gold-hi)}
+  .ucKey{position:absolute;top:8px;right:10px;font-size:11px;color:#5b7089;border:1px solid #35506b;border-radius:4px;padding:0 5px}
+  #selPanel{position:absolute;right:14px;top:14px;width:220px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:9px;z-index:6}
+  #selPanel.hidden{display:none}
+  #selName{font-size:17px;color:var(--gold-hi);letter-spacing:1px}
+  #selHp,#selInfo{font-size:12px;color:#8fa8c2}
+  #selPanel button{padding:8px;border-radius:8px;border:1px solid var(--line);background:rgba(30,45,62,.9);color:var(--txt);cursor:pointer;font-size:13px}
+  #selPanel button:disabled{opacity:.45}
+  #selUp{border-color:#5aa44a !important}
+  .ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,9,14,.72);z-index:9;border-radius:12px}
+  .ov.hidden{display:none}
+  .apanel{width:640px;max-height:600px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 30px;display:flex;flex-direction:column;align-items:center;gap:12px;overflow:auto}
+  .title{font-size:44px;letter-spacing:10px;color:var(--gold-hi);text-shadow:0 0 24px rgba(255,216,115,.35)}
+  .sub{font-size:13px;letter-spacing:3px;color:#7d90a5}
+  #diffBtns{display:flex;gap:10px;margin:12px 0}
+  .diffBtn{padding:9px 18px;border-radius:9px;border:1px solid var(--line);background:rgba(22,32,45,.9);color:var(--txt);cursor:pointer;font-size:13px}
+  .diffBtn.on{border-color:#8fdc7a;color:#8fdc7a}
+  .bigbtn{padding:12px 46px;font-size:17px;letter-spacing:4px;color:#0d1117;background:linear-gradient(#8fdc7a,#5aa44a);border:none;border-radius:10px;cursor:pointer;font-weight:700}
+  .ghostbtn{padding:11px 26px;font-size:14px;color:var(--txt);background:rgba(30,45,62,.9);border:1px solid var(--line);border-radius:10px;cursor:pointer;letter-spacing:2px}
+  #boonCards{display:flex;gap:14px}
+  .boonCard{width:180px;padding:16px;border:1px solid var(--line);border-radius:12px;background:rgba(22,32,45,.9);cursor:pointer;transition:transform .12s,border-color .12s}
+  .boonCard:hover{transform:translateY(-3px);border-color:var(--gold-hi)}
+  .boonCard b{color:var(--gold-hi);font-size:17px;letter-spacing:2px}
+  .boonCard div{margin-top:8px;font-size:13px;color:#9fc2e8}
+  .mstTitle{font-size:20px;color:var(--gold-hi);letter-spacing:2px}
+  .mstRow{display:flex;gap:16px}
+  .mstCard{width:250px;padding:18px;border:1px solid var(--line);border-radius:12px;background:rgba(22,32,45,.9);cursor:pointer;text-align:center}
+  .mstCard:hover{border-color:var(--gold-hi)}
+  .mstCard.mstKept{border-color:#c9a4ff;box-shadow:0 0 14px rgba(201,164,255,.35)}
+  .mstName{font-size:18px;color:#e8dcb8;letter-spacing:2px}
+  .mstFx{font-size:12px;color:#7d90a5;margin-top:8px}
+  .mstKey{font-size:11px;color:#5b7089;margin-top:8px}
+  .mstInh{padding:7px 18px;border:1px solid rgba(201,164,255,.4);border-radius:8px;background:rgba(201,164,255,.08);color:#c9a4ff;font-size:13px;letter-spacing:1px}
+  .mstInh.hidden{display:none}
+  .endbtns{display:flex;gap:14px;margin-top:8px}
+  .hint{font-size:12px;color:#6a7f95;line-height:1.9;max-width:540px}
+  .hint b{color:#9fdcff}
+</style>
+</head>
+<body>
+  <div id="hud">
+    <div class="chip">👑 <span id="hLives">12</span></div>
+    <div class="chip">◈ <span id="hGold">0</span></div>
+    <div class="chip" id="hWave">第 0 / 15 波</div>
+    <div class="chip" id="hPop">⚔ 人口 0/10</div>
+    <div class="spacer"></div>
+    <button id="btnWave">开始防守 ▶</button>
+    <button class="tbtn" id="btnPause" title="暂停 (P)">⏸</button>
+    <button class="tbtn" id="btnMute">🔊</button>
+    <button class="tbtn" onclick="location.href='../index.html'" title="回到水晶守卫">↩</button>
+  </div>
+  <div id="stage">
+    <canvas id="game" width="1280" height="520"></canvas>
+    <div id="unitBar"></div>
+    <div id="spells">
+      <div class="spell" id="sp_meteor" title="流星：点击战场释放 (Q)">☄<span class="spCd">Q</span></div>
+      <div class="spell" id="sp_blizzard" title="暴雪：全场减速 (W)">❆<span class="spCd">W</span></div>
+      <div class="spell" id="sp_holy" title="圣光：全体单位回复 (E)">✚<span class="spCd">E</span></div>
+    </div>
+    <div id="selPanel" class="hidden">
+      <div id="selName"></div><div id="selHp"></div><div id="selInfo"></div>
+      <button id="selUp">升级</button>
+      <button id="selSell">遣散</button>
+    </div>
+    <div class="ov" id="ovTitle">
+      <div class="apanel">
+        <div class="title">王座防线</div>
+        <div class="sub">THRONE LINE · 你的单位就是墙</div>
+        <div id="diffBtns"></div>
+        <button class="bigbtn" id="btnStart">开 始 战 斗</button>
+        <div class="hint">
+          怪不走路——从右侧旷野直扑左侧王座，<b>能阻挡的单位就是防线</b>。
+          前排（剑卫/枪兵）截住敌人贴身肉搏，远程只能躲在身后。
+          <b>人口</b>有限：升一级 +0.5、觉醒 +0.5，铺量与精英不可兼得。
+          战斗中遣散只值 5 成——<b>落子无悔</b>。波后三选一祝福，满级觉醒专精铭刻永久继承。
+          快捷键 1-6 布防 · Q 流星 W 暴雪 E 圣光 · P 暂停
+        </div>
+      </div>
+    </div>
+    <div class="ov hidden" id="ovBoon">
+      <div class="apanel">
+        <div class="mstTitle">战 后 祝 福</div>
+        <div id="boonCards"></div>
+      </div>
+    </div>
+    <div class="ov hidden" id="ovMastery">
+      <div class="apanel">
+        <div class="mstTitle" id="mstTitle"></div>
+        <div class="mstRow">
+          <div class="mstCard" data-m="1"></div>
+          <div class="mstCard" data-m="2"></div>
+        </div>
+        <div class="mstInh hidden" id="mstInh"></div>
+      </div>
+    </div>
+    <div class="ov hidden" id="ovEnd">
+      <div class="apanel">
+        <div class="title" id="endTitle" style="font-size:34px"></div>
+        <div class="sub" id="endSub"></div>
+        <div class="endbtns">
+          <button class="bigbtn" id="btnEndAgain">再 战</button>
+          <button class="ghostbtn" id="btnEndTitle">返回标题</button>
+        </div>
+      </div>
+    </div>
+  </div>
+<script>document.write('<scr' + 'ipt src="throne.js?c=' + (location.search.includes('nocache') ? Math.random() : 1) + '"><\/scr' + 'ipt>');</script>
+</body>
+</html>
