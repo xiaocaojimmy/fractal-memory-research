@@ -64,9 +64,11 @@ const UNITS = {
   sword: { name: '剑卫', cost: 45, pop: 1, hp: 210, dps: 24, range: 1.4, block: 0.75, speed: 0, color: '#7d8aa0', key: '1', desc: '阻挡 · 格挡减伤25%' },
   pike:  { name: '枪兵', cost: 55, pop: 1, hp: 105, dps: 26, range: 1.4, block: 0.75, speed: 0, color: '#8a7d5a', key: '2', desc: '阻挡 · 对冲锋 ×1.5' },
   arch:  { name: '弓手', cost: 70, pop: 1, hp: 45, dps: 28, range: 6.0, block: 0, fort: false, speed: 0, color: '#5a9b6a', key: '3', desc: '远程单体重装' },
-  mage:  { name: '法师', cost: 130, pop: 2, hp: 40, dps: 26, range: 3.4, block: 0, splash: 1.1, color: '#7a6ab8', key: '4', desc: '群体溅射' },
+  mage:  { name: '法师', cost: 130, pop: 2, hp: 40, dps: 26, range: 3.4, block: 0, splash: 1.1, magic: 1, color: '#7a6ab8', key: '4', desc: '群体溅射 · 魔法（怨魂克物理）' },
   holy:  { name: '牧师', cost: 100, pop: 1, hp: 40, dps: 0, heal: 16, range: 2.6, block: 0, color: '#c9b45a', key: '5', desc: '治疗残血友军' },
-  cannon:{ name: '炮台', cost: 190, pop: 3, hp: 70, dps: 70, range: 5.5, block: 0, reload: 3.2, fort: true, color: '#5a6a7a', key: '6', desc: '要塞基座 · 重炮慢填' },
+  cannon:{ name: '炮台', cost: 190, pop: 3, hp: 70, dps: 70, range: 5.5, block: 0, reload: 3.2, fort: true, magic: 1, color: '#5a6a7a', key: '6', desc: '要塞基座 · 重炮慢填' },
+  xbow:  { name: '弩手', cost: 90, pop: 1, hp: 50, dps: 24, range: 6.5, block: 0, pierce: 3, color: '#4a8a5a', key: '7', desc: '穿透：一箭贯穿一排（最多3）', ch2: 1 },
+  drum:  { name: '战鼓手', cost: 95, pop: 1, hp: 85, dps: 0, range: 2.4, block: 0, auraU: 0.15, color: '#c9a44a', key: '8', desc: '鼓声：2.4 格内友军伤害 +15%', ch2: 1 },
 };
 const UPG = { hp: [1, 1.55, 2.4], dps: [1, 1.6, 2.5], cost: [0, 0.75, 1.15] };
 const MASTERY_NAMES = {
@@ -82,10 +84,30 @@ const ENEMIES = {
   bat:    { name: '骨蝠', hp: 40, spd: 2.6, dps: 10, gold: 10, r: 8, color: '#6a5a8a', fly: 1, atk: 0.9 },
   golem:  { name: '石魔', hp: 420, spd: 0.85, dps: 42, gold: 45, r: 16, color: '#7a7a8a', big: 1, atk: 1.5 },
   warlord: { name: '深渊督军', hp: 850, spd: 0.8, dps: 40, gold: 140, r: 19, color: '#7a4a8a', big: 1, boss: 1, atk: 1.5 },
+  sapper: { name: '爆破兵', hp: 65, spd: 2.1, dps: 8, gold: 15, r: 9, color: '#c06a3a', atk: 1.2, boom: 95 },
+  drumer: { name: '兽鼓手', hp: 95, spd: 1.4, dps: 6, gold: 16, r: 11, color: '#8a6a3a', atk: 1.4, aura: 0.25 },
+  wraith: { name: '怨魂', hp: 160, spd: 1.75, dps: 15, gold: 18, r: 10, color: '#8ab8c8', atk: 1.0, physRes: 0.5 },
 };
-const FORTS = [[9, 2], [9, 7], [15, 2], [15, 7], [21, 3], [21, 6]];
-const THRONE = { c: 1.2, r: 4.5 };
-const SPAWN_X = 29.2;
+/* ============ 战役地图（2.0：3 章） ============ */
+const MAPS = [
+  { name: '北境原野', brief: '蛮族大军自东侧原野涌出，直取王城',
+    thr: { c: 1.2, r: 4.5 },
+    spawns: [{ side: 'e', x0: 29.2, r0: 1.2, r1: 8.6 }],
+    forts: [[9, 2], [9, 7], [15, 2], [15, 7], [21, 3], [21, 6]],
+    rocks: [] },
+  { name: '断壁谷', brief: '南谷敌军会绕路奇袭，岩壁限制布阵',
+    thr: { c: 1.6, r: 2.2 },
+    spawns: [{ side: 'e', x0: 29.2, r0: 0.4, r1: 5.4 }, { side: 's', c0: 13, c1: 25 }],
+    forts: [[8, 0], [8, 5], [15, 0], [15, 5], [22, 1], [22, 4]],
+    rocks: [[10, 7], [11, 7], [12, 7], [13, 7], [14, 7]],
+    sLine: 5 },
+  { name: '深渊前线', brief: '督军大军自东西两路合围，王城居中',
+    thr: { c: 15.2, r: 4.5 },
+    spawns: [{ side: 'e', x0: 29.4, r0: 1.2, r1: 8.6 }, { side: 'w', x0: -0.6, r0: 1.2, r1: 8.6 }],
+    forts: [[9, 2], [9, 7], [21, 2], [21, 7], [15, 0], [15, 9]],
+    rocks: [[6, 4], [6, 5], [24, 4], [24, 5]],
+    mixLine: 0.42, fromWave: 4 },
+];
 
 /* ============ 全局状态 ============ */
 const game = {
@@ -98,7 +120,16 @@ const game = {
   waveMod: null, bloodMoon: false, lastBMwave: -3, masteryPending: null,
   spell: { meteor: 0, blizzard: 0, holy: 0 }, aimSpell: null,
   banner: null, over: false, endless: false, chapterLeaks: 0, shake: 0, redT: 0,
+  map: MAPS[0], ch: 0, line: 0, daily: false,
 };
+const THR = () => game.map.thr;
+const FORTL = () => game.map.forts;
+function isRock(c, r) { return game.map.rocks.some(rc => rc[0] === c && rc[1] === r); }
+function spawnPoint(line) {
+  const sp = game.map.spawns[line || 0];
+  if (sp.side === 's') return { x: gx(RR(sp.c0, sp.c1)), y: gy(ROWS + 0.35) };
+  return { x: sp.x0 * TILE + TILE / 2, y: gy(RR(sp.r0, sp.r1)) };
+}
 const TOTAL_WAVES = 15;
 function capTotal() { return (DIFFS[game.diff].cap || 10) + game.popBonus + game.fundPop + (game.endless ? Math.floor(Math.max(0, game.wave - TOTAL_WAVES) / 5) : 0); }
 function usedPop() { let s = 0; for (const u of game.units) s += uPopCost(u); return s; }
@@ -121,15 +152,38 @@ function shade(hex, k) {
 let toastMsg = null, toastT = 0;
 function toast(s) { toastMsg = s; toastT = 2.6; }
 
+/* ============ 2.0 存档：勋章 + 军械库 + 章节进度（localStorage） ============ */
+const ARMORY = {
+  g: { name: '皇家金库', desc: '起始金币 +150', base: 120, step: 140, max: 3 },
+  p: { name: '开拓编制', desc: '人口上限 +1', base: 260, step: 280, max: 2 },
+  c: { name: '军制改革', desc: '技能冷却 -15%', base: 200, step: 240, max: 2 },
+  a: { name: '神匠工坊', desc: '全体单位伤害 +4%', base: 180, step: 220, max: 3 },
+};
+const SAVE = {
+  raw: store.get('save', { medals: 0, arm: {}, chOk: [1, 0, 0], bestCh: {} }),
+  get medals() { return this.raw.medals; },
+  get arm() { return this.raw.arm; },
+  flush() { store.put('save', this.raw); },
+  armCost(k) { const a = ARMORY[k]; const n = this.raw.arm[k] || 0; return n >= a.max ? 0 : a.base + a.step * n; },
+  buyArm(k) {
+    const c = this.armCost(k);
+    if (!c || this.medals < c) return false;
+    this.raw.medals -= c; this.raw.arm[k] = (this.raw.arm[k] || 0) + 1; this.flush(); return true;
+  },
+  award(n) { this.raw.medals += n; this.flush(); },
+};
+
 /* ============ 坐标 ============ */
 const gx = (c) => c * TILE + TILE / 2, gy = (r) => r * TILE + TILE / 2 + 82;
 const cellOf = (x, y) => [Math.floor((x - 0) / TILE), Math.floor((y - 82) / TILE)];
 
-/* ============ 波次 ============ */
-function wavePlan(n) {
-  const hpMul = Math.pow(1.19, n - 1);
+/* ============ 波次（ch: 0 北境原野 / 1 断壁谷 / 2 深渊前线） ============ */
+const CH_CURVE = [1.19, 1.20, 1.20];
+function wavePlan(n, ch) {
+  ch = ch || 0;
+  const hpMul = Math.pow(CH_CURVE[ch], n - 1);
   const q = []; let at = 0;
-  const add = (type, k, gap) => { for (let i = 0; i < k; i++) { q.push({ type, at }); at += gap; } };
+  const add = (type, k, gap, line) => { for (let i = 0; i < k; i++) { q.push({ type, at, line: line || 0 }); at += gap; } };
   if (n === 1) add('goblin', 5, 1.1);
   else if (n === 2) add('goblin', 6, 0.9);
   else if (n === 3) { add('wolf', 3, 1.2); add('goblin', 5, 0.8); }
@@ -146,6 +200,15 @@ function wavePlan(n) {
   else if (n === 14) { add('orc', 9, 0.8); add('shaman', 7, 0.8); add('bat', 7, 0.6); add('golem', 1, 0); }
   else if (n === 15) { add('warlord', 1, 0); add('golem', 2, 2.6); add('orc', 6, 0.7); add('shaman', 4, 0.8); add('wolf', 6, 0.45); add('bat', 5, 0.5); }
   else { add('golem', 3, 2.6); add('orc', 7, 0.7); add('shaman', 5, 0.8); add('wolf', 7, 0.45); add('bat', 6, 0.5); }
+  /* 章节增援 */
+  if (ch >= 1) {
+    if (n >= 3) add('sapper', Math.min(4, 1 + ((n - 3) / 2 | 0)), 0.9);
+    if (n >= 6) add('drumer', n >= 10 ? 2 : 1, 2.4);
+  }
+  if (ch === 2) {
+    if (n >= 4) add('wraith', Math.min(6, 2 + ((n - 4) / 2 | 0)), 0.8);
+    if (n === 15) add('warlord', 1, 1.5);
+  }
   for (const e of q) e.hpMul = hpMul;
   return q;
 }
@@ -166,7 +229,14 @@ function nextWave() {
   if (game.bloodMoon) { game.banner = { txt: '血 月 袭 击', sub: '全员狂化 · 清场缴获巨金', t: 0, life: 3, color: '#ff6a5a' }; }
   else if (game.waveMod) { game.banner = { txt: '词缀 · ' + ({ swift: '疾行', iron: '玄铁', tough: '坚韧' })[game.waveMod], t: 0, life: 2.4, color: '#9fdcff' }; }
   else if (game.wave === 1) game.banner = { txt: '王座防线', sub: '布好你的墙 · 第一波来了', t: 0, life: 2.8, color: '#ffd873' };
-  let q = wavePlan(Math.min(game.wave, 15 + (game.endless ? game.wave - TOTAL_WAVES : 0)));
+  let q = wavePlan(Math.min(game.wave, 15 + (game.endless ? game.wave - TOTAL_WAVES : 0)), game.ch);
+  /* 多路出怪分配 */
+  const mp = game.map;
+  if (mp.spawns.length > 1) {
+    const from = mp.fromWave || mp.sLine || 4;
+    const mix = mp.mixLine || 0.3;
+    if (game.wave >= from) for (const e of q) { if (RT() < mix) e.line = 1; }
+  } else for (const e of q) e.line = 0;
   if (game.endless) { const m = 1 + (game.wave - TOTAL_WAVES) * 0.14; for (const e of q) e.hpMul *= m; }
   /* 精英：w6 起每 3 波 */
   if (game.wave >= 6 && game.wave % 2 === 0 && q.length) {
@@ -181,9 +251,10 @@ function nextWave() {
 
 /* ============ 敌人 ============ */
 class Enemy {
-  constructor(type, hpMul, elite) {
+  constructor(type, hpMul, elite, line) {
     const d = ENEMIES[type];
     this.type = type; this.def = d; this.elite = !!elite;
+    const sp = spawnPoint(line || 0);
     const D = DIFFS[game.diff];
     this.maxHp = d.hp * hpMul * D.hp * (this.elite ? 2.6 : 1);
     this.hp = this.maxHp;
@@ -191,10 +262,10 @@ class Enemy {
     this.armor = (game.waveMod === 'iron' ? 6 : 0) + (this.elite ? 8 : 0);
     this.dmgMul = (game.bloodMoon ? 1.5 : 1) * (game.waveMod === 'tough' ? 1 : 1) * (this.elite ? 1.6 : 1);
     this.gold = Math.round(d.gold * (this.elite ? 6 : 1) * (1 + game.combo * 0.012));
-    this.x = SPAWN_X * TILE + TILE / 2;
-    this.y = gy(this.elite ? 4.5 + RR(-0.8, 0.8) : RR(1.2, 8.6));
+    this.x = sp.x; this.y = sp.y;
     this.r = d.r * (this.elite ? 1.25 : 1);
     this.blocker = null; this.atkCd = 0; this.dead = false; this.slowT = 0;
+    this.boomT = 0; this.boomDmg = (d.boom || 0) * hpMul * D.hp;
     this.hpFlash = 0;
   }
   speedNow() { return this.spd * (this.slowT > 0 ? 0.45 : 1) * TILE; }
@@ -224,6 +295,8 @@ class Enemy {
         this.blocker.damage(dmg, this);
         if (this.def.ranged) fxLine(this.x, this.y, this.blocker.x, this.blocker.y, '#c07ad8');
       }
+      /* 爆破兵：贴身 1 秒起爆，波及周围守军 */
+      if (this.def.boom) { this.boomT += dt; if (this.boomT > 1.0) { boomExplode(this); return; } }
       /* 冲锋怪遇枪兵减速 */
       return;
     }
@@ -234,7 +307,7 @@ class Enemy {
       if (u && this.atkCd <= 0) { this.atkCd = this.def.atk; u.damage(this.dpsNow() * 0.7, this); fxLine(this.x, this.y, u.x, u.y, '#c07ad8'); return; }
     }
     /* 飞向王座；2.6 格内有阻挡单位则偏置接敌（AIGIS 式索敌） */
-    let tx = gx(THRONE.c), ty = gy(THRONE.r);
+    let tx = gx(THR().c), ty = gy(THR().r);
     let nb = null, nd = 4.2 * TILE;
     for (const u of game.units) {
       if (this.def.fly) break;
@@ -253,12 +326,22 @@ class Enemy {
     this.x += dx / dd * sp; this.y += dy / dd * sp;
     if (!nb && dd < TILE * 1.2) { this.dead = true; this.hp = 0; leak(this); }
   }
-  dpsNow() { return this.def.dps * (DIFFS[game.diff].hp * 0.4 + 0.6) * this.dmgMul; }
-  damage(raw) {
+  dpsNow() { let m = 1; for (const a of game.enemies) { if (!a.dead && a !== this && a.def.aura && hyp(a.x - this.x, a.y - this.y) < 2.4 * TILE) m += a.def.aura; } return this.def.dps * (DIFFS[game.diff].hp * 0.4 + 0.6) * this.dmgMul * m; }
+  damage(raw, magic) {
+    if (this.def.physRes && !magic) raw *= (1 - this.def.physRes);
     const d = Math.max(raw * 0.15, raw - this.armor);
     this.hp -= d; this.hpFlash = 0.08;
     if (this.hp <= 0) die(this);
   }
+}
+function boomExplode(e) {
+  e.dead = true; e.hp = 0;
+  fxRing(e.x, e.y, 'rgba(255,150,60,', 1.9 * TILE, 0.42, 6);
+  fxRing(e.x, e.y, 'rgba(255,230,150,', TILE, 0.28, 4);
+  fxBurst(e.x, e.y, '#ff9a3a', 14, 200);
+  for (const u of game.units) { if (!u.dead && hyp(u.x - e.x, u.y - e.y) < 1.9 * TILE) u.damage(e.boomDmg, null); }
+  addText(e.x, e.y - 18, '轰！', '#ffb060', 15, -36);
+  SFX.die();
 }
 function die(e) {
   if (e.dead) return;
@@ -285,8 +368,8 @@ function leak(e) {
   game.combo = 0;
   game.shake = Math.min(0.7, game.shake + 0.4); game.redT = 0.6;
   SFX.leak();
-  addText(gx(THRONE.c), gy(THRONE.r) - 30, '-1 王座', '#ff6a5a', 15, -34);
-  fxRing(gx(THRONE.c), gy(THRONE.r), 'rgba(255,90,70,', 60, 0.5, 4);
+  addText(gx(THR().c), gy(THR().r) - 30, '-1 王座', '#ff6a5a', 15, -34);
+  fxRing(gx(THR().c), gy(THR().r), 'rgba(255,90,70,', 60, 0.5, 4);
   if (game.lives <= 0) loseRun();
   game.enemies = game.enemies.filter(e => e.hp > 0 && !(e.dead));
   /* 触发漏怪的敌人已到达：标记 */
@@ -321,7 +404,7 @@ class Unit {
     this.reengage = 0; this.dead = false; this.kills = 0;
   }
   tier() { const d = UNITS[this.type]; const i = this.level - 1; return { hp: d.hp * UPG.hp[i], dps: d.dps * UPG.dps[i], up: i < 2 ? Math.round(d.cost * UPG.cost[i + 1]) : 0 }; }
-  dps() { let v = this.tier().dps * (1 + game.bonusDmg + 0.05 * game.fundDmg) * boonMul(this.type); if (this.mastery === 1) v *= 1.35; if (this.mastery === 2) v *= 0.85; return v; }
+  dps() { let v = this.tier().dps * (1 + game.bonusDmg + 0.05 * game.fundDmg + 0.04 * (SAVE.arm.a || 0)) * boonMul(this.type); for (const d2 of game.units) { if (!d2.dead && d2 !== this && UNITS[d2.type].auraU && hyp(d2.x - this.x, d2.y - this.y) < UNITS[d2.type].range * TILE) v *= 1 + UNITS[d2.type].auraU; } if (this.mastery === 1) v *= 1.35; if (this.mastery === 2) v *= 0.85; return v; }
   healPow() { return (UNITS[this.type].heal || 0) * UPG.hp[this.level - 1] * 1; }
   maxHpNow() { let v = UNITS[this.type].hp * UPG.hp[this.level - 1] * boonHp() * (DIFFS[game.diff].cost > 1 ? 0.9 : 1); if (this.mastery === 1) v *= 1.3; return v; }
   damage(raw, from) {
@@ -377,6 +460,25 @@ class Unit {
     game.shots.push({ x: this.x, y: this.y, tx: best.x, ty: best.y, t: 0, life: 0.12, color: this.type === 'mage' ? '#b08aff' : this.type === 'cannon' ? '#ffb060' : '#ffe8a0', big: this.type === 'cannon' });
     SFX.hit();
     hitUnit(this, best, dmg);
+    if (d.pierce) {
+      const dirx = (best.x - this.x), diry = (best.y - this.y);
+      const L = hyp(dirx, diry) || 1; const px = -diry / L, py = dirx / L;
+      let extra = d.pierce - 1;
+      const cand = [];
+      for (const e of game.enemies) {
+        if (e === best || e.dead || e.hp <= 0) continue;
+        const rx = e.x - this.x, ry = e.y - this.y;
+        const along = (rx * dirx + ry * diry) / L;
+        if (along < 8 || along > d.range * TILE * 1.15) continue;
+        if (Math.abs(rx * px + ry * py) > 15) continue;
+        cand.push({ e, along });
+      }
+      cand.sort((a, b2) => a.along - b2.along);
+      for (let i2 = 0; i2 < Math.min(extra, cand.length); i2++) {
+        hitUnit(this, cand[i2].e, dmg * 0.65);
+        game.shots.push({ x: this.x, y: this.y, tx: cand[i2].e.x, ty: cand[i2].e.y, t: 0, life: 0.1, color: '#cfe8a0', thin: 1 });
+      }
+    }
     if (d.splash) {
       const sr = d.splash * TILE * (this.mastery === 1 ? 1.3 : 1);
       for (const e of game.enemies) { if (e !== best && !e.dead && e.hp > 0 && hyp(e.x - best.x, e.y - best.y) < sr) hitUnit(this, e, dmg * 0.55); }
@@ -386,7 +488,7 @@ class Unit {
 }
 function hitUnit(u, e, dmg) {
   const before = e.hp;
-  e.damage(dmg);
+  e.damage(dmg, !!UNITS[u.type].magic);
   if (e.hp <= 0 && before > 0) u.kills++;
 }
 function boonMul(type) {
@@ -408,18 +510,18 @@ const SPELLS = {
 function spellReady(k) { return game.state === 'play' && game.spell[k] <= 0; }
 function castSpell(k, x, y) {
   if (!spellReady(k)) return false;
-  game.spell[k] = SPELLS[k].cd;
+  game.spell[k] = SPELLS[k].cd * spellCdMul();
   SFX.spell();
   if (k === 'meteor') {
     const R = 2.4 * TILE;
-    for (const e of game.enemies) { if (e.dead) continue; const dd = hyp(e.x - x, e.y - y); if (dd < R) e.damage((420 + game.wave * 55) * (1 - dd / R / 1.6) * (1 + game.bonusDmg)); }
+    for (const e of game.enemies) { if (e.dead) continue; const dd = hyp(e.x - x, e.y - y); if (dd < R) e.damage((420 + game.wave * 55) * (1 - dd / R / 1.6) * (1 + game.bonusDmg), true); }
     fxRing(x, y, 'rgba(255,140,60,', R, 0.5, 5); fxRing(x, y, 'rgba(255,220,120,', R * 0.5, 0.35, 8);
   } else if (k === 'blizzard') {
     for (const e of game.enemies) if (!e.dead && !e.def.boss) e.slowT = 4;
     fxRing(gx(15), gy(7), 'rgba(120,200,255,', 900, 0.6, 3);
   } else if (k === 'holy') {
     for (const u of game.units) { u.hp = Math.min(u.maxHpNow(), u.hp + u.maxHpNow() * 0.5); }
-    fxRing(gx(THRONE.c), gy(THRONE.r), 'rgba(255,230,130,', 800, 0.6, 4);
+    fxRing(gx(THR().c), gy(THR().r), 'rgba(255,230,130,', 800, 0.6, 4);
   }
   game.aimSpell = null;
   return true;
@@ -479,13 +581,15 @@ function fundTry(k, slack) {
 
 /* ============ 放置/升级/出售 ============ */
 function unitAt(c, r) { return game.units.find(u => u.c === c && u.r === r); }
-function isFort(c, r) { return FORTS.some(f => f[0] === c && f[1] === r); }
+function isFort(c, r) { return FORTL().some(f => f[0] === c && f[1] === r); }
 function canPlace(c, r, type) {
-  if (c < 4 || c >= COLS || r < 1 || r >= ROWS - 1) return false;
+  if (c < 4 || c >= COLS || r < 0 || r >= ROWS) return false;
+  if (isRock(c, r)) return false;
   if (unitAt(c, r)) return false;
   if (UNITS[type].fort && !isFort(c, r)) return false;
   if (isFort(c, r) && UNITS[type].block) return false;
-  const d = Math.min(Math.abs(c - THRONE.c), Math.abs(c - (THRONE.c + 28))); void d;
+  const dc = Math.abs(c - THR().c), dr = Math.abs(r - THR().r);
+  if (dc < 2 && dr < 1.8) return false;
   return true;
 }
 function placeTower(c, r, type) {
@@ -567,21 +671,31 @@ function pickMastery(m) {
 }
 
 /* ============ 结束 ============ */
+function medalGain(win) {
+  const base = game.wave * 3 + (win ? 80 : 0) + game.stats.kills * 0.4;
+  const mul = (game.diff === 'hard' ? 1.5 : game.diff === 'night' ? 2.2 : 1) * (1 + game.ch * 0.5) * (game.daily ? 2 : 1);
+  return Math.max(2, Math.round(base * mul));
+}
 function winRun() {
   game.state = 'win'; game.over = true;
+  if (game.ch < 2) SAVE.raw.chOk[game.ch + 1] = 1;
+  const gain = medalGain(true); SAVE.award(gain);
   store.put('best.' + game.diff, Math.max(store.get('best.' + game.diff, 0), game.wave));
-  showEnd(true);
+  showEnd(true, gain);
 }
 function loseRun() {
   if (game.state !== 'play') return;
   game.state = 'over'; game.over = true; game.lives = 0;
+  const gain = medalGain(false); SAVE.award(gain);
   store.put('best.' + game.diff, Math.max(store.get('best.' + game.diff, 0), game.wave - 1));
-  showEnd(false);
+  showEnd(false, gain);
 }
-function showEnd(win) {
+function showEnd(win, gain) {
   $('endTitle').textContent = win ? '王 座 守 住 了' : '王 座 陷 落';
   $('endTitle').style.color = win ? '#8fdc7a' : '#ff7a6a';
-  $('endSub').textContent = '第 ' + game.wave + ' 波 · 击杀 ' + game.stats.kills + ' · 漏怪 ' + game.stats.leaks + ' · 最佳连杀 ' + game.comboBest;
+  $('endSub').textContent = '第 ' + game.wave + ' 波 · 击杀 ' + game.stats.kills + ' · 漏怪 ' + game.stats.leaks + ' · 最佳连杀 ' + game.comboBest + ' · 🏅 勋章 +' + gain;
+  const nb = $('btnNextCh');
+  if (nb) { nb.style.display = win && game.ch < 2 ? '' : 'none'; nb.textContent = '进入下一章 · ' + MAPS[game.ch + 1].name + ' ▶'; }
   showOv('ovEnd');
 }
 
@@ -589,7 +703,7 @@ function showEnd(win) {
 function step(dt) {
   game.t += dt;
   for (const k of Object.keys(game.spell)) {
-    const cdMul = 1 - Math.min(0.5, (game.boonPicks.cd || 0) * 0.12);
+    const cdMul = spellCdMul();
     game.spell[k] = Math.max(0, game.spell[k] - dt * cdMul);
   }
   if (game.banner) { game.banner.t += dt; if (game.banner.t > game.banner.life) game.banner = null; }
@@ -601,7 +715,7 @@ function step(dt) {
     while (game.spawnQueue.length && game.spawnQueue[0].at <= game.spawnT) {
       const q = game.spawnQueue.shift();
       if (ENEMIES[q.type].boss) { game.banner = { txt: '深渊督军降临', sub: '重创王座的元凶，就在阵中', t: 0, life: 3, color: '#c9a4ff' }; game.shake = 0.8; SFX.ding(); }
-      game.enemies.push(new Enemy(q.type, q.hpMul, q.elite));
+      game.enemies.push(new Enemy(q.type, q.hpMul, q.elite, q.line));
     }
   }
   for (const u of game.units) u.update(dt);
@@ -655,17 +769,42 @@ function renderBg() {
   }
   /* 王座前石板广场 */
   b.fillStyle = 'rgba(90,105,125,0.10)';
-  b.beginPath(); b.ellipse(gx(THRONE.c), gy(THRONE.r) + 10, 150, 120, 0, 0, 7); b.fill();
-  for (let i = 0; i < 3; i++) { b.strokeStyle = 'rgba(120,140,165,0.08)'; b.beginPath(); b.ellipse(gx(THRONE.c), gy(THRONE.r) + 10, 70 + i * 42, 54 + i * 34, 0, 0, 7); b.stroke(); }
+  b.beginPath(); b.ellipse(gx(THR().c), gy(THR().r) + 10, 150, 120, 0, 0, 7); b.fill();
+  for (let i = 0; i < 3; i++) { b.strokeStyle = 'rgba(120,140,165,0.08)'; b.beginPath(); b.ellipse(gx(THR().c), gy(THR().r) + 10, 70 + i * 42, 54 + i * 34, 0, 0, 7); b.stroke(); }
   /* 可建区网格 */
-  for (let r = 1; r < ROWS - 1; r++) for (let c = 4; c < COLS; c++) {
+  for (let r = 0; r < ROWS; r++) for (let c = 4; c < COLS; c++) {
+    if (isRock(c, r)) continue;
     b.strokeStyle = 'rgba(170,210,170,0.055)';
     b.strokeRect(c * TILE + 2, gy(r) - TILE / 2 + 2, TILE - 4, TILE - 4);
   }
-  /* 右侧敌区：焦土渐变带 + 裂纹 */
-  const wg = b.createLinearGradient(24 * TILE, 0, W, 0);
-  wg.addColorStop(0, 'rgba(120,50,40,0)'); wg.addColorStop(1, 'rgba(130,50,38,0.20)');
-  b.fillStyle = wg; b.fillRect(24 * TILE, 82, W - 24 * TILE, HT - 82);
+  /* 岩壁：不可布阵巨石（左上受光） */
+  for (const [c, r] of game.map.rocks) {
+    const rx = gx(c), ry = gy(r);
+    b.fillStyle = 'rgba(0,0,0,0.30)'; b.beginPath(); b.ellipse(rx + 5, ry + 14, 20, 7, 0, 0, 7); b.fill();
+    const rg = b.createLinearGradient(rx - 18, ry - 18, rx + 18, ry + 16);
+    rg.addColorStop(0, '#5a626e'); rg.addColorStop(0.5, '#454c58'); rg.addColorStop(1, '#2c313c');
+    b.fillStyle = rg;
+    b.beginPath(); b.moveTo(rx - 19, ry + 12); b.lineTo(rx - 14, ry - 10); b.lineTo(rx - 3, ry - 17); b.lineTo(rx + 12, ry - 12); b.lineTo(rx + 19, ry + 4); b.lineTo(rx + 13, ry + 14); b.closePath(); b.fill();
+    b.fillStyle = 'rgba(220,235,255,0.10)'; b.beginPath(); b.ellipse(rx - 6, ry - 8, 7, 3.6, -0.5, 0, 7); b.fill();
+    b.strokeStyle = 'rgba(20,24,30,0.5)'; b.lineWidth = 1;
+    b.beginPath(); b.moveTo(rx - 8, ry - 6); b.lineTo(rx - 2, ry + 6); b.lineTo(rx + 6, ry + 2); b.stroke();
+  }
+  /* 敌区：按出怪方向铺焦土带 */
+  for (const sp of game.map.spawns) {
+    if (sp.side === 'e') {
+      const wg = b.createLinearGradient(24 * TILE, 0, W, 0);
+      wg.addColorStop(0, 'rgba(120,50,40,0)'); wg.addColorStop(1, 'rgba(130,50,38,0.20)');
+      b.fillStyle = wg; b.fillRect(24 * TILE, 82, W - 24 * TILE, HT - 82);
+    } else if (sp.side === 'w') {
+      const wg = b.createLinearGradient(4 * TILE, 0, 0, 0);
+      wg.addColorStop(0, 'rgba(120,50,40,0)'); wg.addColorStop(1, 'rgba(130,50,38,0.20)');
+      b.fillStyle = wg; b.fillRect(0, 82, 4 * TILE, HT - 82);
+    } else if (sp.side === 's') {
+      const wg = b.createLinearGradient(0, HT - 3 * TILE, 0, HT);
+      wg.addColorStop(0, 'rgba(120,50,40,0)'); wg.addColorStop(1, 'rgba(130,50,38,0.20)');
+      b.fillStyle = wg; b.fillRect(10 * TILE, HT - 3 * TILE, 18 * TILE, 3 * TILE);
+    }
+  }
   b.strokeStyle = 'rgba(70,30,24,0.25)'; b.lineWidth = 1;
   for (let i = 0; i < 7; i++) {
     const x0 = 27 * TILE + (i * 53) % 120, y0 = 100 + (i * 127) % (HT - 160);
@@ -683,7 +822,7 @@ function draw() {
   if (game.shake > 0) ctx.translate((RT() - 0.5) * game.shake * 15, (RT() - 0.5) * game.shake * 11);
   ctx.drawImage(bg, 0, 0);
   /* 王座：城堡剪影 + 呼吸辉光 */
-  const tx = gx(THRONE.c), ty = gy(THRONE.r);
+  const tx = gx(THR().c), ty = gy(THR().r);
   ctx.save();
   const tg = ctx.createRadialGradient(tx, ty, 10, tx, ty, 86 + Math.sin(game.t * 2) * 5);
   tg.addColorStop(0, 'rgba(130,190,255,0.22)'); tg.addColorStop(1, 'rgba(130,190,255,0)');
@@ -703,7 +842,7 @@ function draw() {
   ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(tx, ty - 58, 10 + Math.sin(game.t * 3) * 1.5, 0, 7); ctx.fill();
   ctx.restore();
   /* 要塞基座 */
-  for (const [c, r] of FORTS) {
+  for (const [c, r] of FORTL()) {
     const placed = isFortPlaced(c, r);
     const fx0 = c * TILE + 5, fy0 = gy(r) - TILE / 2 + 5, fsz = TILE - 10;
     ctx.fillStyle = placed ? 'rgba(90,110,140,0.18)' : 'rgba(255,215,115,0.07)';
@@ -834,6 +973,23 @@ function drawUnit(u) {
       ctx.fillStyle = og; ctx.beginPath(); ctx.arc(x + 9, y - 18, 5, 0, 7); ctx.fill();
     }
     if (u.type === 'arch') { ctx.strokeStyle = '#c9a06a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(x - 10, y - 2, 7, -1.2, 1.2); ctx.stroke(); }
+    if (u.type === 'xbow') {
+      ctx.strokeStyle = '#c9a06a'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x - 12, y - 9); ctx.quadraticCurveTo(x - 4, y - 4, x - 12, y + 2); ctx.stroke();
+      ctx.strokeStyle = '#8a7250'; ctx.beginPath(); ctx.moveTo(x - 13, y - 4); ctx.lineTo(x + 2, y - 4); ctx.stroke();
+      ctx.strokeStyle = 'rgba(230,230,200,0.8)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x - 12, y - 9); ctx.lineTo(x + 1, y - 4); ctx.lineTo(x - 12, y + 2); ctx.stroke();
+    }
+    if (u.type === 'drum') {
+      ctx.fillStyle = '#8a6040'; ctx.beginPath(); ctx.ellipse(x, y + 3, 9, 7, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#e8d8b0'; ctx.beginPath(); ctx.ellipse(x, y + 1, 9, 4.5, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#c9a44a'; ctx.lineWidth = 1.4;
+      const bt = Math.sin(game.t * 8);
+      ctx.beginPath(); ctx.moveTo(x - 9, y - 6); ctx.lineTo(x - 4, y - 1 + bt * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + 9, y - 6); ctx.lineTo(x + 4, y - 1 - bt * 2); ctx.stroke();
+      ctx.strokeStyle = 'rgba(220,190,110,' + (0.35 + 0.2 * bt) + ')';
+      ctx.beginPath(); ctx.arc(x, y, d.range * TILE * (0.5 + 0.12 * bt), 0, 7); ctx.stroke();
+      ctx.fillStyle = '#c9a44a'; ctx.beginPath(); ctx.moveTo(x + 7, y - 14); ctx.lineTo(x + 7, y - 22); ctx.lineTo(x + 14, y - 19); ctx.closePath(); ctx.fill();
+    }
     if (u.type === 'cannon') { ctx.fillStyle = shade(d.color, 0.75); ctx.fillRect(x - 3, y - 16, 6, 12); ctx.fillStyle = '#242c36'; ctx.beginPath(); ctx.arc(x, y - 17, 3.2, 0, 7); ctx.fill(); }
   }
   if (u.mastery) {
@@ -899,6 +1055,32 @@ function drawEnemy(e) {
     ctx.fillStyle = shade(col, 0.8);
     ctx.beginPath(); ctx.moveTo(e.x - e.r * 0.9, y - e.r * 0.15); ctx.lineTo(e.x, y - e.r * 1.7); ctx.lineTo(e.x + e.r * 0.9, y - e.r * 0.15); ctx.closePath(); ctx.fill();
     ctx.fillStyle = 'rgba(200,130,255,0.9)'; ctx.beginPath(); ctx.arc(e.x, y - e.r * 1.55, 2.2, 0, 7); ctx.fill();
+  } else if (e.type === 'sapper') {
+    ctx.beginPath(); ctx.arc(e.x, y, e.r, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(60,40,20,0.9)'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(e.x + e.r * 0.3, y - e.r * 0.9); ctx.quadraticCurveTo(e.x + e.r, y - e.r * 1.5, e.x + e.r * 0.4, y - e.r * 1.8); ctx.stroke();
+    const spark = 0.6 + 0.4 * Math.sin(game.t * 22 + e.x);
+    ctx.fillStyle = 'rgba(255,220,90,' + spark + ')'; ctx.beginPath(); ctx.arc(e.x + e.r * 0.4, y - e.r * 1.85, 2.4 + spark, 0, 7); ctx.fill();
+    if (e.boomT > 0) { const bl = e.boomT; ctx.strokeStyle = 'rgba(255,120,50,' + (0.4 + bl * 0.6) + ')'; ctx.lineWidth = 1 + bl * 2; ctx.beginPath(); ctx.arc(e.x, y, e.r + 3 + bl * 4, 0, 7); ctx.stroke(); }
+  } else if (e.type === 'drumer') {
+    ctx.beginPath(); ctx.arc(e.x, y, e.r, 0, 7); ctx.fill();
+    ctx.fillStyle = shade(col, 0.7);
+    ctx.beginPath(); ctx.ellipse(e.x, y + e.r * 0.45, e.r * 0.85, e.r * 0.5, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(240,220,180,0.6)'; ctx.lineWidth = 1.5;
+    const beat = Math.sin(game.t * 7 + e.x * 0.2);
+    ctx.beginPath(); ctx.moveTo(e.x - e.r * 0.7, y - e.r * 0.7); ctx.lineTo(e.x - e.r * 0.2, y - e.r * 0.1 + beat * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(e.x + e.r * 0.7, y - e.r * 0.7); ctx.lineTo(e.x + e.r * 0.2, y - e.r * 0.1 - beat * 2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(220,180,110,0.35)';
+    ctx.beginPath(); ctx.arc(e.x, y, e.r + 5 + beat * 3, 0, 7); ctx.stroke();
+  } else if (e.type === 'wraith') {
+    ctx.globalAlpha = 0.75;
+    ctx.beginPath(); ctx.arc(e.x, y - e.r * 0.15, e.r * 0.9, Math.PI, 0); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(e.x - e.r * 0.9, y - e.r * 0.1);
+    for (let i2 = 0; i2 <= 4; i2++) { const wx2 = e.x - e.r * 0.9 + e.r * 0.45 * i2; ctx.quadraticCurveTo(wx2 + e.r * 0.12, y + e.r * (i2 % 2 ? 1.1 : 0.6), wx2 + e.r * 0.225, y + e.r * 0.85); }
+    ctx.lineTo(e.x + e.r * 0.9, y - e.r * 0.1); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(240,255,255,0.95)'; ctx.beginPath(); ctx.arc(e.x - e.r * 0.3, y - e.r * 0.3, 1.8, 0, 7); ctx.arc(e.x + e.r * 0.28, y - e.r * 0.3, 1.8, 0, 7); ctx.fill();
   } else {
     ctx.beginPath(); ctx.arc(e.x, y, e.r, 0, 7); ctx.fill();
     if (e.type === 'goblin') {
@@ -1139,15 +1321,22 @@ $('btnSpeed').addEventListener('click', cycleSpeed);
 $('btnWave').addEventListener('click', () => { if (!game.waveActive) nextWave(); });
 
 /* ============ 开局/流程 ============ */
-function startRun(diff) {
+function spellCdMul() { return 1 - Math.min(0.5, (game.boonPicks && game.boonPicks.cd || 0) * 0.12 + 0.15 * (SAVE.arm.c || 0)); }
+function startRun(diff, ch, daily) {
   game.diff = diff;
   game.speed = 1;
+  game.ch = ch || 0;
+  if (Q.get('armmax')) { SAVE.raw.arm = { g: 3, p: 2, c: 2, a: 3 }; }
+  game.map = MAPS[game.ch];
+  game.daily = !!daily;
+  if (daily) { const ds = new Date(); _rs = ds.getFullYear() * 10000 + (ds.getMonth() + 1) * 100 + ds.getDate(); }
+  renderBg();
   const D = DIFFS[diff];
   game.state = 'play'; game.t = 0; game.paused = false;
-  game.lives = D.lives; game.gold = 210; game.wave = 0; game.waveActive = false;
+  game.lives = D.lives; game.gold = 210 + 150 * (SAVE.arm.g || 0) + 60 * game.ch; game.wave = 0; game.waveActive = false;
   game.spawnQueue = []; game.units = []; game.enemies = []; game.shots = []; game.texts = []; game.fx = [];
-  game.pop = 0; game.popBonus = 0; game.fundDmg = 0; game.fundPop = 0;
-  game.unlocked = new Set(['sword', 'pike', 'arch']);
+  game.pop = 0; game.popBonus = SAVE.arm.p || 0; game.fundDmg = 0; game.fundPop = 0;
+  game.unlocked = new Set(game.ch > 0 ? ['sword', 'pike', 'arch', 'xbow', 'drum'] : ['sword', 'pike', 'arch']);
   game.sel = null; game.build = null; game.aimSpell = null;
   game.stats = { kills: 0, leaks: 0, spent: 0 };
   game.keptMastery = {}; game.combo = 0; game.comboBest = 0; game.bonusDmg = 0;
@@ -1218,7 +1407,8 @@ step = function (dt) {
 function shotRun(ws) {
   const SL = [[11, 4], [11, 6], [11, 3], [11, 7], [11, 2], [10, 5], [11, 5], [10, 3]];
   const RS = [[8, 5], [8, 4], [8, 6], [7, 5], [6, 4], [8, 3]];
-  startRun('normal');
+  startRun('normal', +Q.get('ch') || 0);
+  game.gold = 600;
   let guard = 0;
   while (guard++ < 60 * 60 * 4) {
     step(1 / 60);
@@ -1234,24 +1424,30 @@ function shotRun(ws) {
     else if (game.gold > 120) { const pool = game.units.filter(u => u.level < 3).sort((a, b) => a.level - b.level); if (pool.length && game.gold >= pool[0].tier().up) upgradeUnit(pool[0]); }
     if (!game.waveActive) { game.waitT = (game.waitT || 0) + 1 / 60; if (game.waitT > 2) { game.waitT = 0; nextWave(); } }
     if (game.wave >= ws && game.waveActive && game.enemies.length > 5) break;
-    if (Q.get('spawn') && game.waveActive && game.enemies.length > 2 && !game.enemies.some(e => e.def.boss)) {
+    if (Q.get('spawn') && !game.__spDone && game.waveActive && game.enemies.length > 2) {
+      game.__spDone = 1;
       const m = Math.pow(1.19, game.wave - 1);
       game.enemies.push(new Enemy(Q.get('spawn'), m, false));
     }
   }
 }
 function runSim(n) {
-  /* 阻挡双列：中路优先向外展开；远程：要塞+后排散布 */
-  const BLOCK_SLOTS = [];
-  { const spread = [4, 6, 3, 7, 2, 8, 5, 1, 9, 0];
-    for (const r of spread) BLOCK_SLOTS.push([11, r]);
-    for (const r of spread) BLOCK_SLOTS.push([10, r]); }
-  const RANGED_SLOTS = [];
-  for (const c of [8, 7, 6]) for (const r of [5, 4, 6, 3, 7, 2, 8, 1]) RANGED_SLOTS.push([c, r]);
-  const FORT_ORDER = FORTS.slice().sort((a, b) => Math.abs(a[1] - 5) - Math.abs(b[1] - 5));
+  /* 王座环绕式布阵（对 3 张图通用）：阻挡环 dist 2.6~4.6 格、其余为远程池 */
+  const BLOCK_SLOTS = [], RANGED_SLOTS = [];
+  { const thr = THR(), cs = [];
+    for (let r = 0; r < ROWS; r++) for (let c = 4; c < COLS; c++) {
+      if (isRock(c, r)) continue;
+      const dd = Math.hypot(c - thr.c, r - thr.r);
+      if (dd >= 2.4 && dd <= 3.9) BLOCK_SLOTS.push([c, r]);
+      else if (dd < 8.5) cs.push([c, r]);
+    }
+    BLOCK_SLOTS.sort((a, b) => Math.abs(Math.hypot(a[0] - thr.c, a[1] - thr.r) - 2.9) - Math.abs(Math.hypot(b[0] - thr.c, b[1] - thr.r) - 2.9) || a[1] - b[1]);
+    cs.sort((a, b) => Math.hypot(a[0] - thr.c, a[1] - thr.r) - Math.hypot(b[0] - thr.c, b[1] - thr.r));
+    for (const x of cs) RANGED_SLOTS.push(x); }
+  const FORT_ORDER = FORTL().slice().sort((a, b) => Math.abs(b[1] - THR().r) - Math.abs(a[1] - THR().r));
   let bi = 0, ri = 0, fbi = 0, placeCd = 0;
-  const rankPool = DUMB ? ['sword'] : ['sword', 'sword', 'arch', 'mage', 'mage', 'pike', 'holy', 'cannon'];
-  const QUOTA = { sword: 5, pike: 2, arch: 3, mage: 1, holy: 2, cannon: 1 };
+  const rankPool = DUMB ? ['sword'] : ['sword', 'sword', 'arch', 'xbow', 'mage', 'mage', 'pike', 'holy', 'cannon', 'drum'];
+  const QUOTA = { sword: 5, pike: 2, arch: 3, xbow: 2, mage: 1, holy: 2, cannon: 1, drum: 1 };
   for (let i = 0; i < n; i++) {
     step(1 / 60);
     placeCd -= 1 / 60;
@@ -1269,9 +1465,11 @@ function runSim(n) {
           const cheapest = costOf(pool2[0]);
           const big = pool2.filter(t => costOf(t) >= cheapest * 1.8);
           const cheap = pool2.filter(t => costOf(t) < cheapest * 1.8);
-          const hasRanged = game.units.filter(u => !UNITS[u.type].block && u.type !== 'holy').length;
+          const hasRanged = game.units.filter(u => !UNITS[u.type].block && u.type !== 'holy' && u.type !== 'drum').length;
           order = (game.gold > 160 || hasRanged < 2) ? cheap.concat(big) : cheap;
           order.sort((a, b) => ((QUOTA[b] || 2) - (cnt[b] || 0)) - ((QUOTA[a] || 2) - (cnt[a] || 0)) || costOf(a) - costOf(b));
+          if (game.enemies.some(e2 => e2.def.physRes) && (cnt.mage || 0) < 2 && order.includes('mage')) order = ['mage'].concat(order.filter(t => t !== 'mage'));
+          if (game.enemies.filter(e2 => e2.def.aura).length && (cnt.mage || 0) < 1 && order.includes('mage')) order = ['mage'].concat(order.filter(t => t !== 'mage'));
         } else order = avail.slice();
         for (const t of order) {
           const d = UNITS[t];
@@ -1302,7 +1500,7 @@ function runSim(n) {
         while (upg) {
           upg = false;
           const pool = game.units.filter(u => u.level < 3).sort((a, b) => a.level - b.level);
-          const nr = game.units.filter(u => !UNITS[u.type].block && u.type !== 'holy' && !u.dead).length;
+          const nr = game.units.filter(u => !UNITS[u.type].block && u.type !== 'holy' && u.type !== 'drum' && !u.dead).length;
           for (const u of pool) {
             if (nr < 2 && usedPop() + 1.0 > capTotal() - 1) break;
             if (game.gold >= u.tier().up && upgradeUnit(u)) { upg = true; break; }
@@ -1348,12 +1546,63 @@ function pickRank() {
   return b.id;
 }
 
+function renderArmory() {
+  const box = $('armCards'); if (!box) return;
+  $('armMedals').textContent = '🏅 ' + SAVE.medals;
+  box.innerHTML = '';
+  for (const k of Object.keys(ARMORY)) {
+    const a = ARMORY[k];
+    const n = SAVE.arm[k] || 0;
+    const cost = SAVE.armCost(k);
+    const card = document.createElement('div');
+    card.className = 'boonCard';
+    card.style.flex = '1 1 30%';
+    card.style.minWidth = '180px';
+    card.innerHTML = '<b>' + a.name + ' <span style="color:#8fdc7a">Lv' + n + '/' + a.max + '</span></b><div>' + a.desc + '</div>' +
+      '<div style="margin-top:8px;color:' + (cost && SAVE.medals >= cost ? '#ffd873' : '#7a8a9a') + '">' + (cost ? '🏅 ' + cost : '已满级') + '</div>';
+    if (cost) {
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', () => { if (SAVE.buyArm(k)) { SFX.ding(); renderArmory(); } else { SFX.err ? SFX.err() : SFX.die(); toast('勋章不足'); } });
+    }
+    box.appendChild(card);
+  }
+}
+
 /* ============ 启动 ============ */
 function boot() {
   renderBg();
   requestAnimationFrame(loop);
-  $('btnStart').addEventListener('click', () => startRun(curDiff));
-  let curDiff = 'normal';
+  $('btnStart').addEventListener('click', () => startRun(curDiff, curCh));
+  let curDiff = 'normal', curCh = 0;
+  const chBtns = $('chBtns');
+  if (chBtns) {
+    chBtns.innerHTML = '';
+    MAPS.forEach((m, i) => {
+      const b = document.createElement('button');
+      const ok = SAVE.raw.chOk[i];
+      b.className = 'diffBtn' + (i === 0 ? ' on' : '');
+      b.style.maxWidth = '200px';
+      b.innerHTML = ok ? ('第' + '一二三'[i] + '章 · ' + m.name) : ('🔒 ' + m.name);
+      if (!ok) b.style.opacity = 0.45;
+      b.addEventListener('click', () => {
+        if (!SAVE.raw.chOk[i]) { toast('通关上一章解锁'); return; }
+        curCh = i;
+        for (const x of chBtns.children) x.classList.remove('on');
+        b.classList.add('on');
+      });
+      chBtns.appendChild(b);
+    });
+  }
+  const openArm = () => {
+    renderArmory();
+    showOv('ovArm');
+  };
+  $('btnArmory') && $('btnArmory').addEventListener('click', openArm);
+  $('btnArmBack') && $('btnArmBack').addEventListener('click', () => hideOv('ovArm'));
+  $('btnDaily') && $('btnDaily').addEventListener('click', () => { hideOv('ovArm'); startRun('hard', 0, true); toast('每日突袭 · 勋章 ×2'); });
+  $('btnNextCh') && $('btnNextCh').addEventListener('click', () => { hideOv('ovEnd'); startRun(game.diff, Math.min(2, game.ch + 1)); });
+  renderArmory();
+  if (Q.get('arm')) setTimeout(() => { try { $('btnArmory').click(); } catch (e) {} }, 0);
   const btns = $('diffBtns');
   for (const d of ['normal', 'hard', 'night']) {
     const b = document.createElement('button');
@@ -1367,7 +1616,7 @@ function boot() {
     });
     btns.appendChild(b);
   }
-  $('btnEndAgain').addEventListener('click', () => { hideOv('ovEnd'); startRun(game.diff); });
+  $('btnEndAgain').addEventListener('click', () => { hideOv('ovEnd'); startRun(game.diff, game.ch); });
   $('btnEndTitle').addEventListener('click', () => { hideOv('ovEnd'); showOv('ovTitle'); game.state = 'title'; });
   $('mstCardRow') && void 0;
   document.querySelectorAll('.mstCard').forEach((cd) => cd.addEventListener('click', () => pickMastery(parseInt(cd.dataset.m, 10))));
@@ -1377,7 +1626,7 @@ function boot() {
 if (SIM_N > 0) {
   boot();
   window.__lastop = 'booted';
-  startRun(SIM_DIFF);
+  startRun(SIM_DIFF, +Q.get('ch') || 0);
   window.__lastop = 'runStarted';
   if (Q.get('dbg') === '2') {
     DBG_hook = () => {
@@ -1429,6 +1678,25 @@ if (SIM_N > 0) {
   select(u0);
   $('selSell').click();
   R.push(['sell', game.units.length === 0]);
+  /* ---- 2.0 新系统 ---- */
+  startRun('normal', 1);
+  R.push(['ch2map', game.map === MAPS[1] && game.unlocked.has('xbow')]);
+  { const sp0 = new Enemy('sapper', 1, 0); game.enemies.push(sp0);
+    placeTower(8, 4, 'sword'); const su = game.units[game.units.length - 1];
+    sp0.x = su.x + 30; sp0.y = su.y;
+    const uhp = su.hp;
+    for (let i = 0; i < 90; i++) sp0.update(0.02);
+    R.push(['boom', su.hp < uhp || su.dead]); }
+  startRun('normal', 0); game.gold = 999; game.unlocked.add('xbow');
+  placeTower(8, 4, 'xbow'); const xu = game.units[game.units.length - 1];
+  { const es = []; for (let i = 0; i < 3; i++) { const e2 = new Enemy('goblin', 0.1, 0); e2.x = xu.x + 60 + i * 20; e2.y = xu.y; game.enemies.push(e2); es.push(e2); }
+    xu.cd = 0; xu.update(0.05);
+    R.push(['pierce', es[1].hp < es[1].maxHp && es[2].hp < es[2].maxHp]); }
+  { const wr = new Enemy('wraith', 1, 0); const whp = wr.hp; wr.damage(100, false);
+    R.push(['physres', whp - wr.hp < 60]); }
+  { SAVE.raw.medals = 999; const okr = SAVE.buyArm('g'); const lv = SAVE.arm.g; SAVE.raw.arm = {}; SAVE.raw.medals = 0; SAVE.flush();
+    R.push(['armory', okr === true && lv === 1]); }
+  startRun('normal');
   const bad = R.filter(x => x[1] === false).map(x => x[0]);
   document.title = (bad.length ? 'UI FAIL: ' + bad.join(',') : 'UI PASS ' + R.length) + ' ' + JSON.stringify(R.map(x => [x[0], x[1]]));
   } catch (e) { document.title = 'UITEST ERR ' + e.message + ' | ' + String(e.stack || '').split('\n')[1]; }
