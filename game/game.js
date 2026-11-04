@@ -795,6 +795,7 @@ const game = {
   stats: { kills: 0, gold: 0, spent: 0, built: 0, bossKills: 0, spells: 0, noleakWaves: 0 },
   totalKills: 0,
   waveMod: null, bloodMoon: false, lastBMwave: -3, combo: 0, comboBest: 0, bonusDmg: 0, masteryPending: null, slowT: 0,
+  keptMastery: {},
 };
 for (let i = 0; i < 24; i++) {
   game.flyies.push({ x: RR(0, W), y: RR(0, H), p: RR(0, TAU), sp: RR(6, 16), q: RR(0, TAU) });
@@ -1587,6 +1588,7 @@ function resetRun(diff) {
   game.waveActive = false;
   game.waveMod = null; game.bloodMoon = false; game.lastBMwave = -3;
   game.combo = 0; game.comboBest = 0; game.bonusDmg = 0; game.masteryPending = null;
+  game.keptMastery = {}; game.slowT = 0;
   game.speed = 1; game.paused = false; game.time = 0;
   game.shake = 0; game.vign = 0; game.vignSnow = 0; game.coreHit = -9;
   game.enemies = []; game.towers = []; game.projectiles = []; game.beams = [];
@@ -1612,6 +1614,8 @@ function startRun(diff, resumeFrom) {
     game.lives = s.lives;
     game.boons = s.boons || {};
     game.boonPicks = s.boonPicks || 0;
+    game.keptMastery = s.keptMastery || {};
+    game.bonusDmg = s.bonusDmg || 0;
     game.mapIdx = s.map || 0;
     game.stats = s.stats || game.stats;
     loadMap(game.mapIdx);
@@ -1712,14 +1716,17 @@ function endWave() {
     const ch = CHAPTERS[game.wave / 10];
     if (ch && ch.map !== game.mapIdx) {
       let refund = 0;
-      for (const t of game.towers) refund += t.invested;
-      refund = Math.round(refund * 0.6);
+      for (const t of game.towers) {
+        refund += t.invested;
+        if (t.mastered()) game.keptMastery[t.type] = t.mastery;
+      }
+      refund = Math.round(refund * 0.8);
       game.towers = [];
       game.gold += refund;
       game.mapIdx = ch.map;
       loadMap(ch.map);
       game.sel = null; game.build = null;
-      game.banner = { txt: ch.name, sub: '防务折价回收 +' + refund + ' ◈（6 成）· 新战场位置即决策', t: 0, life: 3.4, color: '#ffd873' };
+      game.banner = { txt: ch.name, sub: '防务回收 +' + refund + ' ◈（8 成）· 觉醒专精已继承 · 新战场布防', t: 0, life: 3.4, color: '#ffd873' };
       for (const u of ch.unlock) { game.unlocked.add(u); SFX.ding(); }
       refreshCards();
     } else if (ch) {
@@ -1763,6 +1770,7 @@ function saveCheckpoint() {
   store.putSave({
     v: 2, diff: game.diff, wave: game.wave, gold: game.gold, lives: game.lives,
     boons: game.boons, boonPicks: game.boonPicks, map: game.mapIdx,
+    keptMastery: game.keptMastery, bonusDmg: game.bonusDmg,
     stats: game.stats,
     towers: game.towers.map(t => ({ type: t.type, c: t.c, r: t.r, lvl: t.level, inv: t.invested, m: t.mastery })),
   });
@@ -1831,10 +1839,20 @@ function openMasteryUI(t) {
   game.masteryPending = t;
   const ov = el.ovMastery;
   const names = MASTERY_NAMES[t.type] || ['毁灭', '疾风'];
+  const kp = game.keptMastery[t.type];
   ov.querySelector('.mstTitle').textContent = TOWERS[t.type].name + ' 满级觉醒 · 选择专精（永久）';
   const cards = ov.querySelectorAll('.mstCard');
   cards[0].innerHTML = '<div class="mstName">' + names[0] + '</div><div class="mstFx">毁灭 · 伤害 +30% · 射程 −6%</div><div class="mstKey">按 1 选择</div>';
   cards[1].innerHTML = '<div class="mstName">' + names[1] + '</div><div class="mstFx">疾风 · 攻速 +28% · 射程 +12%</div><div class="mstKey">按 2 选择</div>';
+  if (kp) {
+    const inh = ov.querySelector('.mstInh');
+    inh.textContent = '3 · 继承已铭刻专精「' + names[kp - 1] + '」';
+    inh.classList.remove('hidden');
+  } else {
+    ov.querySelector('.mstInh').classList.add('hidden');
+  }
+  for (const cd of cards) cd.classList.remove('mstKept');
+  if (kp) cards[kp - 1].classList.add('mstKept');
   ov.dataset.tower = game.towers.indexOf(t);
   showOv('ovMastery');
 }
@@ -1860,7 +1878,7 @@ function upgradeTower(t) {
   t.invested += cost;
   t.level++;
   if (t.level === 3 && !t.mastery) {
-    if (typeof SIM_N !== 'undefined' && SIM_N > 0) t.mastery = DUMB ? 0 : (game.towers.indexOf(t) % 2) ? 1 : 2;
+    if (typeof SIM_N !== 'undefined' && SIM_N > 0) t.mastery = DUMB ? 0 : (game.keptMastery[t.type] || ((game.towers.indexOf(t) % 2) ? 1 : 2));
     else { game.masteryPending = t; game.paused = true; openMasteryUI(t); }
   }
   SFX.place();
@@ -1874,6 +1892,10 @@ function sellTower(t) {
   if (!t) return;
   const refund = Math.round(t.invested * 0.72);
   game.gold += refund;
+  if (t.mastered()) {
+    game.keptMastery[t.type] = t.mastery;
+    addText(t.x, t.y - 34, '专精已铭刻：' + (MASTERY_NAMES[t.type] || ['', ''])[t.mastery - 1], '#c9a4ff', 11, -30);
+  }
   game.towers = game.towers.filter(x => x !== t);
   game.sel = null;
   SFX.sell();
@@ -2233,6 +2255,7 @@ window.addEventListener('keydown', ev => {
   if (k === 'escape') { game.build = null; game.aimSpell = null; game.sel = null; hideSel(); syncHud(); return; }
   if (game.state !== 'play' || game.boonMode) return;
   if (game.masteryPending && (k === '1' || k === '2')) { pickMastery(parseInt(k, 10)); return; }
+  if (game.masteryPending && k === '3') { const kp = game.keptMastery[game.masteryPending.type]; if (kp) pickMastery(kp); return; }
   if (k >= '1' && k <= '9') {
     const idx = parseInt(k, 10) - 1;
     const t = TOWER_ORDER[idx];
@@ -3243,6 +3266,15 @@ if (Q.get('demo') === '1') {
     R.push(['mstPick', game.towers[0].mastery === 2 && $('ovMastery').classList.contains('hidden') && !game.paused]);
     $('selSell').click();
     R.push(['sell', game.towers.length === 0]);
+    R.push(['kept', game.keptMastery.arrow === 2]);
+    game.gold = 99999;
+    placeTower(cc, rr, 'arrow');
+    const t2 = game.towers[game.towers.length - 1];
+    t2.level = 3;
+    openMasteryUI(t2);
+    R.push(['mstInh', !$('ovMastery').classList.contains('hidden') && !$('ovMastery').querySelector('.mstInh').classList.contains('hidden')]);
+    key('3');
+    R.push(['mstInhPick', t2.mastery === 2 && $('ovMastery').classList.contains('hidden')]);
     key('q');
     R.push(['aim', game.aimSpell === 'meteor']);
     clk(400, 300);
