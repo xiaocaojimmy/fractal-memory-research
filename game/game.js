@@ -635,9 +635,9 @@ const CHAPTERS = [
 ];
 const TOTAL_WAVES = 60;
 const DIFFS = {
-  normal: { name: '普通', hp: 1, gold: 1, lives: 12, boss: 1, cap: 24 },
-  hard: { name: '困难', hp: 1.35, gold: 0.95, lives: 10, boss: 1.15, cap: 20 },
-  night: { name: '噩梦', hp: 1.8, gold: 0.88, lives: 6, boss: 1.3, cap: 17 },
+  normal: { name: '普通', hp: 1, gold: 1, lives: 12, boss: 1, cap: 34 },
+  hard: { name: '困难', hp: 1.35, gold: 0.95, lives: 10, boss: 1.15, cap: 29 },
+  night: { name: '噩梦', hp: 1.8, gold: 0.88, lives: 6, boss: 1.3, cap: 24 },
 };
 
 /* ---------------- wave table ---------------- */
@@ -1814,10 +1814,14 @@ function canPlace(c, r) {
   return !towerAt(c, r);
 }
 function towerCap() {
-  let cap = DIFFS[game.diff].cap || 22;
-  if (game.endless) cap += 2 * Math.floor(Math.max(0, game.wave - TOTAL_WAVES) / 10);
+  let cap = DIFFS[game.diff].cap || 30;
+  if (game.endless) cap += 3 * Math.floor(Math.max(0, game.wave - TOTAL_WAVES) / 10);
   return cap;
 }
+/* 容量制（参考 BTD6 pop）：塔等级越高占用容量越多——数量与品质不可兼得 */
+const CAP_COST = [0, 1, 1.6, 2.2];
+function towerCapCost(t) { return (CAP_COST[t.level] || 1) + (t.mastered() ? 0.3 : 0); }
+function usedCap() { let s = 0; for (const t of game.towers) s += towerCapCost(t); return s; }
 /* 军费：后期金币出口——直接购买全局战力 */
 const FUNDS = {
   dmg: { name: '军火补给', desc: '全塔伤害 +5%', base: 900, step: 250, get n() { return game.fundDmg; } },
@@ -1856,7 +1860,7 @@ setInterval(() => { const ov = document.getElementById('ovFund'); if (ov && !ov.
 function placeTower(c, r, type) {
   const def = TOWERS[type];
   if (!def || !game.unlocked.has(type)) return false;
-  if (game.towers.length >= towerCap()) { toast('塔位已满（上限 ' + towerCap() + '）· 出售或换防再建'); return false; }
+  if (usedCap() + 1 > towerCap()) { toast('防区容量已满（' + usedCap().toFixed(1) + '/' + towerCap() + '）· 卖塔换防或保留低阶数量'); return false; }
   if (game.gold < def.cost || !canPlace(c, r)) return false;
   game.gold -= def.cost;
   game.stats.spent += def.cost; game.stats.built++;
@@ -1913,6 +1917,11 @@ function upgradeTower(t) {
   if (!t || t.level >= 3) return false;
   const cost = t.tier().up;
   if (game.gold < cost) return false;
+  const delta = (CAP_COST[t.level + 1] || 1) - (CAP_COST[t.level] || 1);
+  if (usedCap() + delta > towerCap()) {
+    if (typeof SIM_N === 'undefined' || SIM_N <= 0) toast('容量不足：升到 L' + (t.level + 1) + ' 需 +' + delta.toFixed(1) + ' 容量 · 卖塔腾容或保留数量');
+    return false;
+  }
   game.gold -= cost;
   game.stats.spent += cost;
   t.invested += cost;
@@ -1983,7 +1992,7 @@ function syncHud() {
   const ch = game.endless ? '无尽模式' : CHAPTERS[Math.min(5, Math.floor(game.wave / 10))].name.split('·')[1] || '';
   el.wave.textContent = '第 ' + game.wave + ' / ' + tot + ' 波' + (game.bloodMoon ? ' 🌑血月' : game.waveMod ? ' ·' + game.waveMod.name : '');
   el.wave.style.color = game.bloodMoon ? '#ff9a6b' : game.waveMod ? game.waveMod.color : '';
-  el.chapter.textContent = ch + ' · 🗼' + game.towers.length + '/' + towerCap() + (game.combo >= 5 && game.waveActive ? ' · ⚡' + game.combo + '连杀' : '');
+  el.chapter.textContent = ch + ' · ⚡' + usedCap().toFixed(1) + '/' + towerCap() + (game.combo >= 5 && game.waveActive ? ' · ⚡' + game.combo + '连杀' : '');
   el.chapter.style.color = game.combo >= 15 ? '#ffcf5e' : '';
   el.btnSpeed.textContent = game.speed + '×';
   el.btnPause.textContent = game.paused ? '▶' : '⏸';
@@ -2229,9 +2238,9 @@ function renderTitle() {
   const btns = $('diffBtns');
   btns.innerHTML = '';
   const defs = [
-    ['normal', '普通 · 12 生命 · 24 塔位'],
-    ['hard', '困难 · 10 生命 · 20 塔位（敌血 ×1.4）' + (canDiff('hard') ? '' : ' 🔒')],
-    ['night', '噩梦 · 6 生命 · 17 塔位（敌血 ×1.85）' + (canDiff('night') ? '' : ' 🔒')],
+    ['normal', '普通 · 12 生命 · 容量 34'],
+    ['hard', '困难 · 10 生命 · 容量 29（敌血 ×1.35）' + (canDiff('hard') ? '' : ' 🔒')],
+    ['night', '噩梦 · 6 生命 · 容量 24（敌血 ×1.8）' + (canDiff('night') ? '' : ' 🔒')],
   ];
   for (const [k, label] of defs) {
     const b = document.createElement('button');
@@ -3191,7 +3200,7 @@ function runSim(n) {
           const [t, c, r] = BUY[k];
           if (!canPlace(c, r)) { if (k === bi) bi++; continue; }
           game.unlocked.add(t);
-          if (game.gold >= TOWERS[t].cost) { placeTower(c, r, t); bi = k + 1; placeCd = 0.35; break; }
+          if (game.gold >= TOWERS[t].cost) { if (placeTower(c, r, t)) { bi = k + 1; placeCd = 0.35; } else placeCd = 1.5; break; }
         }
       }
       if (!game.waveActive) {
@@ -3205,7 +3214,7 @@ function runSim(n) {
           const pool = game.towers.filter(t => t.level < 3).sort((a, b) => a.level - b.level);
           for (const tw of pool) {
             const cost = tw.tier().up;
-            if (game.gold > cost + 30) { upgradeTower(tw); upg = true; break; }
+            if (game.gold > cost + 30 && upgradeTower(tw)) { upg = true; break; }
           }
         }
         const nextCost = bi < BUY.length ? TOWERS[BUY[bi][0]].cost : 1e9;
