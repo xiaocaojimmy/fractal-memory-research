@@ -96,6 +96,15 @@
   .mstInh.hidden{display:none}
   .endbtns{display:flex;gap:14px;margin-top:8px}
   .hint{font-size:12.5px;color:var(--dim);line-height:2.05;max-width:560px;text-wrap:pretty}
+  .bk{max-height:62vh;overflow-y:auto;text-align:left;margin:6px 2px 12px;padding-right:8px}
+  .bkSec{margin-bottom:12px;padding:9px 12px;background:rgba(12,18,28,0.55);border:1px solid rgba(201,164,90,0.22);border-left:3px solid var(--gold);clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+  .bkH{font-family:var(--dis);font-size:14px;color:var(--gold-hi);letter-spacing:1px;margin-bottom:4px}
+  .bkP{font-size:12.5px;color:#c6d4e6;line-height:1.95}
+  .bkP b{color:#ffe8b0;font-weight:600}
+  #tutTip{position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:60;max-width:640px;display:flex;align-items:center;gap:12px;padding:10px 16px;font-size:13.5px;color:#ffe8b0;background:linear-gradient(160deg,rgba(18,26,40,0.96),rgba(10,16,26,0.96));border:1px solid rgba(201,164,90,0.55);box-shadow:0 6px 28px rgba(0,0,0,0.55);clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+  #tutTip.hidden{display:none}
+  #tutX{cursor:pointer;color:var(--dim);padding:0 2px}
+  #tutX:hover{color:var(--gold-hi)}
   .hint b{color:var(--gold-hi);font-weight:600}
   #armMedals{font-size:22px;color:var(--gold-hi);font-variant-numeric:tabular-nums;letter-spacing:.04em}
   #chBtns{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap}
@@ -147,6 +156,7 @@
         <div class="rowbtns">
           <button class="ghostbtn" id="btnArmory">🏅 皇家军械库</button>
           <button class="ghostbtn" id="btnDaily">🌙 每日突袭 · 勋章 ×2</button>
+          <button class="ghostbtn" id="btnBook">📖 游戏图鉴</button>
         </div>
         <div class="hint">
           怪不走路——直扑王座，<b>能阻挡的单位就是防线</b>。前排截住敌人贴身肉搏，远程躲在身后输出。
@@ -191,6 +201,39 @@
         <button class="ghostbtn" id="btnArmBack">返 回</button>
       </div>
     </div>
+    <div class="ov hidden" id="ovBook">
+      <div class="apanel" style="max-width:860px">
+        <div class="title" style="font-size:26px">游戏图鉴</div>
+        <div class="bk">
+          <div class="bkSec">
+            <div class="bkH">◈ 核心循环</div>
+            <div class="bkP">怪物从东边<b>直扑王座</b>，不会绕路——<b>能阻挡的单位就是墙</b>。前排剑卫/枪兵截住敌人，远程在墙后输出。击杀得金 → 扩建/升级 → 撑过 15 波（Boss 押后）过关。王座生命漏怪即扣，扣光败北。人口有限：铺量与精英二选一。</div>
+          </div>
+          <div class="bkSec">
+            <div class="bkH">⛰ 石垒（金框格）</div>
+            <div class="bkP"><b>炮台专用炮位</b>，其他单位进不去。炮台落垒立享<b>射程 +15%、攻速 +18%</b>（石垒加成，单位脚下金光）。每图 6 垒 = 最多 6 炮：垒是火力点也是稀缺资源，占哪个、留哪个给推进轴，是每局的布防抉择。</div>
+          </div>
+          <div class="bkSec">
+            <div class="bkH">✦ 升级 · 觉醒 · 祝福</div>
+            <div class="bkP">点单位花金升级（+伤害/+生命，每级 +0.5 人口）。<b>Lv3 觉醒二选一</b>：毁灭系（伤害 +35%、生命 +30%）或疾风系（攻速 +40%、射程 +15%、伤害 −15%）——觉醒过同类可一键继承铭刻。每波结束三选一<b>祝福</b>（全军增益/技能冷却/经济）。</div>
+          </div>
+          <div class="bkSec">
+            <div class="bkH">🏅 勋章 · 军械库 · 章节</div>
+            <div class="bkP">结算按波数+击杀给<b>勋章</b>（难度/章节/每日突袭加成），在<b>皇家军械库</b>永久购买：起始金币、人口上限、技能冷却、全军伤害。章节逐关解锁，每章怪物血量再 +19%；<b>每日突袭</b>勋章 ×2。</div>
+          </div>
+          <div class="bkSec">
+            <div class="bkH">👹 敌军图鉴</div>
+            <div class="bkP"><b>地精</b>人海 · <b>野狼</b>高速 · <b>兽人</b>厚血 · <b>蝙蝠</b>飞行（近战打不到，留给远程）· <b>萨满</b>给怪群回血（优先点杀）· <b>岩魔像</b>重甲压场 · <b>督军</b>Boss · <b>爆破兵</b>贴脸自爆 95 · <b>兽鼓手</b>给怪群加攻速 · <b>怨魂</b>物理减伤（法师/牧师克制）。</div>
+          </div>
+          <div class="bkSec">
+            <div class="bkH">⌨ 操作</div>
+            <div class="bkP">1-8 选卡点击布防 · 右键/遣散按钮卖单位（五成退款）· <b>Q</b> 流星 <b>W</b> 暴雪 <b>E</b> 圣光（技能是破口救急键）· <b>F</b> 倍速 · <b>P</b> 暂停 · <b>H</b> 图鉴。</div>
+          </div>
+        </div>
+        <button class="ghostbtn" id="btnBookBack">返 回</button>
+      </div>
+    </div>
+    <div id="tutTip" class="hidden"><span id="tutTxt"></span><b id="tutX">✕</b></div>
   </div>
   </div>
 <script>
