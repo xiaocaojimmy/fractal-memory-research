@@ -5,69 +5,109 @@
 <title>王座防线 Throne Line</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-  :root{--gold:#c9a45a;--gold-hi:#ffd873;--ink:#0c1219;--panel:rgba(13,19,27,.95);--line:#3d5570;--txt:#cfe3ff}
+  :root{
+    --gold:#c9a45a; --gold-hi:#e9c87e; --gold-deep:#8a6a33; --gold-dim:rgba(201,164,90,.22);
+    --ink:#0b1017; --stone:#141d28; --stone-hi:#1c2836; --panel:linear-gradient(180deg,rgba(24,34,47,.97),rgba(12,18,26,.98));
+    --line:rgba(201,164,90,.20); --line-hi:rgba(201,164,90,.45);
+    --txt:#d9e4f1; --dim:#8496ab; --ok:#9fd08a; --bad:#d0796a;
+    --ui:"Segoe UI",system-ui,sans-serif; --dis:"Palatino Linotype",Georgia,"STZhongsong",SimSun,serif;
+    --cut:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);
+    --oct:polygon(11px 0,calc(100% - 11px) 0,100% 11px,100% calc(100% - 11px),calc(100% - 11px) 100%,11px 100%,0 calc(100% - 11px),0 11px);
+  }
   *{margin:0;padding:0;box-sizing:border-box;user-select:none}
-  body{background:radial-gradient(1200px 700px at 50% 30%,#16222e,#0a0f16 75%);color:var(--txt);font-family:"Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh}
+  body{background:radial-gradient(1300px 760px at 50% 26%,#182432,#0a0f16 78%);color:var(--txt);font-family:var(--ui);display:flex;flex-direction:column;align-items:center;min-height:100vh}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:98;opacity:.05;
+    background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2"/></filter><rect width="140" height="140" filter="url(%23n)" opacity="0.9"/></svg>')}
   #app{display:flex;flex-direction:column;align-items:center}
-  #hud{width:1280px;display:flex;align-items:center;gap:10px;padding:10px 6px;flex-wrap:nowrap}
-  #hud .chip{background:rgba(20,30,42,.9);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:14px;white-space:nowrap}
-  #hPop{color:#8fd0ff}
+  button{font-family:inherit;transition:filter .18s,background .18s,border-color .18s,transform .12s,box-shadow .18s}
+  button:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px}
+  button:active{transform:translateY(1px) scale(.985)}
+  /* ---------- HUD ---------- */
+  #hud{width:1280px;display:flex;align-items:center;gap:9px;padding:12px 6px 10px;flex-wrap:nowrap}
+  #hud .chip{position:relative;background:linear-gradient(180deg,#1a2634,#111a26);clip-path:var(--cut);box-shadow:inset 0 0 0 1px rgba(148,170,195,.14),inset 2px 0 0 var(--gold-deep);padding:7px 13px;font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+  #hPop{color:#9fd0e8}
   #hud .spacer{flex:1}
-  #btnWave{padding:9px 22px;font-size:15px;letter-spacing:2px;color:#0d1117;background:linear-gradient(#8fdc7a,#5aa44a);border:none;border-radius:9px;cursor:pointer;font-weight:700}
-  #btnWave:disabled{filter:grayscale(.7) brightness(.7)}
-  .tbtn{width:36px;height:34px;border-radius:8px;border:1px solid var(--line);background:rgba(22,32,45,.9);color:var(--txt);cursor:pointer;font-size:15px}
+  #btnWave{padding:10px 24px;font-size:15px;letter-spacing:.12em;color:#241a08;background:linear-gradient(180deg,#eed9a0,#c9a45a 48%,#a9833e);clip-path:var(--cut);border:none;cursor:pointer;font-weight:700;filter:drop-shadow(0 3px 12px rgba(201,164,90,.28))}
+  #btnWave:hover{filter:brightness(1.07) drop-shadow(0 4px 14px rgba(201,164,90,.4))}
+  #btnWave:disabled{filter:grayscale(.75) brightness(.62)}
+  .tbtn{width:37px;height:35px;clip-path:var(--cut);border:none;box-shadow:inset 0 0 0 1px rgba(148,170,195,.16);background:linear-gradient(180deg,#1a2634,#111a26);color:var(--txt);cursor:pointer;font-size:15px}
+  .tbtn:hover{box-shadow:inset 0 0 0 1px var(--line-hi);color:var(--gold-hi)}
+  /* ---------- 舞台 ---------- */
   #stage{position:relative;width:1280px}
-  canvas{display:block;border-radius:12px;border:1px solid #223245;cursor:crosshair}
+  canvas{display:block;border-radius:6px;box-shadow:0 0 0 1px rgba(201,164,90,.22),0 0 0 5px #0d141d,0 26px 70px rgba(3,6,10,.75);cursor:crosshair}
   #spells{position:absolute;left:14px;bottom:12px;display:flex;gap:10px;z-index:5}
-  .spell{position:relative;width:52px;height:52px;border-radius:50%;border:2px solid #46627f;background:rgba(16,26,38,.92);color:#9fc2e8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px}
-  .spell.ready{border-color:#8fd0ff;box-shadow:0 0 12px rgba(120,200,255,.4)}
-  .spell.aiming{border-color:var(--gold-hi)}
-  .spCd{position:absolute;right:-2px;bottom:-4px;font-size:11px;color:#ffd873;background:rgba(0,0,0,.6);border-radius:6px;padding:0 5px}
+  .spell{position:relative;width:52px;height:52px;border-radius:50%;border:2px solid rgba(160,140,90,.38);background:radial-gradient(circle at 34% 28%,#22303f,#101923);color:#cbb887;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;transition:border-color .18s,filter .18s}
+  .spell.ready{border-color:var(--gold-hi);color:#f2dc9a;filter:drop-shadow(0 0 9px rgba(233,200,126,.45))}
+  .spell.aiming{border-color:#f2dc9a;background:radial-gradient(circle at 34% 28%,#3a3220,#191410)}
+  .spCd{position:absolute;right:-2px;bottom:-4px;font-size:11px;color:#f2dc9a;background:rgba(6,9,13,.82);border-radius:5px;padding:0 5px;font-variant-numeric:tabular-nums}
   #unitBar{position:absolute;left:214px;bottom:8px;display:flex;gap:8px;z-index:4}
-  .unitCard{position:relative;width:118px;padding:9px 10px;border:1px solid #2c3e52;border-radius:10px;background:rgba(18,28,40,.92);cursor:pointer;transition:border-color .12s,transform .1s;display:flex;flex-direction:column;gap:4px}
-  .unitCard:hover{border-color:#6f92b8;transform:translateY(-2px)}
-  .unitCard.sel{border-color:var(--gold-hi);box-shadow:0 0 10px rgba(255,216,115,.25)}
-  .unitCard.locked{opacity:.38;cursor:default}
-  .unitCard.off .ucCost{color:#ff8a7a}
-  .ucIcon{width:26px;height:26px;border-radius:6px;margin-bottom:2px}
-  .unitCard b{font-size:14px;letter-spacing:2px}
-  .ucCost{font-size:12px;color:var(--gold-hi)}
-  .ucKey{position:absolute;top:8px;right:10px;font-size:11px;color:#5b7089;border:1px solid #35506b;border-radius:4px;padding:0 5px}
-  #selPanel{position:absolute;right:14px;top:14px;width:220px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:9px;z-index:6}
+  .unitCard{position:relative;width:118px;padding:10px 11px;clip-path:var(--oct);box-shadow:inset 0 0 0 1px rgba(148,170,195,.13);background:linear-gradient(180deg,#1a2736,#101924);cursor:pointer;transition:transform .12s,box-shadow .15s,filter .15s;display:flex;flex-direction:column;gap:4px}
+  .unitCard:hover{transform:translateY(-3px);box-shadow:inset 0 0 0 1px var(--line-hi),0 10px 22px rgba(3,6,10,.55)}
+  .unitCard.sel{box-shadow:inset 0 0 0 1.5px var(--gold-hi),0 0 16px rgba(233,200,126,.22);background:linear-gradient(180deg,#243043,#141d29)}
+  .unitCard.locked{opacity:.36;cursor:default;transform:none}
+  .unitCard.off .ucCost{color:var(--bad)}
+  .ucIcon{width:26px;height:26px;border-radius:4px;margin-bottom:2px;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+  .unitCard b{font-size:14px;letter-spacing:.14em;font-family:var(--dis)}
+  .ucCost{font-size:12px;color:var(--gold-hi);font-variant-numeric:tabular-nums}
+  .ucKey{position:absolute;top:8px;right:10px;font-size:11px;color:#8fa4bb;clip-path:var(--cut);box-shadow:inset 0 0 0 1px rgba(148,170,195,.22);padding:0 5px}
+  #selPanel{position:absolute;right:14px;top:14px;width:222px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:9px;z-index:6;box-shadow:inset 0 1px 0 rgba(255,235,190,.07),0 18px 44px rgba(3,6,10,.65)}
   #selPanel.hidden{display:none}
-  #selName{font-size:17px;color:var(--gold-hi);letter-spacing:1px}
-  #selHp,#selInfo{font-size:12px;color:#8fa8c2}
-  #selPanel button{padding:8px;border-radius:8px;border:1px solid var(--line);background:rgba(30,45,62,.9);color:var(--txt);cursor:pointer;font-size:13px}
-  #selPanel button:disabled{opacity:.45}
-  #selUp{border-color:#5aa44a !important}
-  .ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,9,14,.72);z-index:9;border-radius:12px}
+  #selName{font-size:17px;color:var(--gold-hi);letter-spacing:.12em;font-family:var(--dis)}
+  #selHp,#selInfo{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+  #selPanel button{padding:8px;border-radius:4px;border:1px solid var(--line);background:rgba(201,164,90,.05);color:var(--txt);cursor:pointer;font-size:13px}
+  #selPanel button:hover{background:rgba(201,164,90,.13)}
+  #selPanel button:disabled{opacity:.4}
+  #selUp{border-color:var(--line-hi) !important;color:var(--gold-hi)}
+  /* ---------- 弹窗（石墙玻璃） ---------- */
+  .ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,9,14,.78);backdrop-filter:blur(3px);z-index:9;border-radius:6px}
   .ov.hidden{display:none}
-  .apanel{width:640px;max-height:600px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 30px;display:flex;flex-direction:column;align-items:center;gap:12px;overflow:auto}
-  .title{font-size:44px;letter-spacing:10px;color:var(--gold-hi);text-shadow:0 0 24px rgba(255,216,115,.35)}
-  .sub{font-size:13px;letter-spacing:3px;color:#7d90a5}
+  .apanel{position:relative;width:640px;max-height:600px;background:var(--panel);border:1px solid var(--line-hi);border-radius:8px;padding:34px 34px 30px;display:flex;flex-direction:column;align-items:center;gap:12px;overflow:auto;
+    box-shadow:inset 0 1px 0 rgba(255,235,190,.09),0 0 0 5px rgba(10,15,22,.85),0 30px 90px rgba(2,5,9,.8)}
+  .apanel::before{content:"";position:absolute;top:14px;left:50%;transform:translateX(-50%);width:min(360px,70%);height:1px;
+    background:linear-gradient(90deg,transparent,rgba(201,164,90,.55),transparent)}
+  .apanel::after{content:"";position:absolute;top:11px;left:50%;width:7px;height:7px;transform:translateX(-50%) rotate(45deg);background:#0f1620;border:1px solid rgba(201,164,90,.6)}
+  .title{font-family:var(--dis);font-size:46px;font-weight:700;letter-spacing:.16em;padding-left:.16em;
+    background:linear-gradient(180deg,#f5e2a8,#c9a45a 58%,#8a6a33);-webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 2px 14px rgba(201,164,90,.30))}
+  .sub{font-size:12px;letter-spacing:.34em;color:var(--dim)}
   #diffBtns{display:flex;gap:10px;margin:12px 0}
-  .diffBtn{padding:9px 18px;border-radius:9px;border:1px solid var(--line);background:rgba(22,32,45,.9);color:var(--txt);cursor:pointer;font-size:13px}
-  .diffBtn.on{border-color:#8fdc7a;color:#8fdc7a}
-  .bigbtn{padding:12px 46px;font-size:17px;letter-spacing:4px;color:#0d1117;background:linear-gradient(#8fdc7a,#5aa44a);border:none;border-radius:10px;cursor:pointer;font-weight:700}
-  .ghostbtn{padding:11px 26px;font-size:14px;color:var(--txt);background:rgba(30,45,62,.9);border:1px solid var(--line);border-radius:10px;cursor:pointer;letter-spacing:2px}
+  .diffBtn{padding:10px 18px;border-radius:4px;border:1px solid rgba(148,170,195,.18);background:linear-gradient(180deg,#18232f,#111a24);color:var(--txt);cursor:pointer;font-size:13px}
+  .diffBtn:hover{border-color:var(--line-hi)}
+  .diffBtn.on{border-color:transparent;color:#241a08;font-weight:600;background:linear-gradient(180deg,#e6cf94,#b99452)}
+  .bigbtn{padding:13px 44px;font-size:17px;letter-spacing:.2em;padding-left:calc(44px + .2em);color:#241a08;background:linear-gradient(180deg,#eed9a0,#c9a45a 48%,#a9833e);border:none;clip-path:var(--cut);cursor:pointer;font-weight:700;filter:drop-shadow(0 4px 16px rgba(201,164,90,.30))}
+  .bigbtn:hover{filter:brightness(1.07) drop-shadow(0 5px 18px rgba(201,164,90,.42))}
+  .ghostbtn{padding:12px 24px;font-size:14px;color:#dcc998;background:rgba(201,164,90,.06);border:1px solid rgba(201,164,90,.38);border-radius:4px;cursor:pointer;letter-spacing:.08em}
+  .ghostbtn:hover{background:rgba(201,164,90,.14);border-color:var(--gold-hi);color:#f2dc9a}
   #boonCards{display:flex;gap:14px}
-  .boonCard{width:180px;padding:16px;border:1px solid var(--line);border-radius:12px;background:rgba(22,32,45,.9);cursor:pointer;transition:transform .12s,border-color .12s}
-  .boonCard:hover{transform:translateY(-3px);border-color:var(--gold-hi)}
-  .boonCard b{color:var(--gold-hi);font-size:17px;letter-spacing:2px}
-  .boonCard div{margin-top:8px;font-size:13px;color:#9fc2e8}
-  .mstTitle{font-size:20px;color:var(--gold-hi);letter-spacing:2px}
+  .boonCard{position:relative;width:180px;padding:18px 16px;clip-path:var(--oct);box-shadow:inset 0 0 0 1px rgba(148,170,195,.14);background:linear-gradient(180deg,#1b2838,#101924);cursor:pointer;transition:transform .14s,box-shadow .15s}
+  .boonCard::before{content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);width:56%;height:1px;background:linear-gradient(90deg,transparent,rgba(201,164,90,.5),transparent)}
+  .boonCard:hover{transform:translateY(-4px);box-shadow:inset 0 0 0 1px var(--line-hi),0 14px 30px rgba(3,6,10,.6)}
+  .boonCard b{color:var(--gold-hi);font-size:17px;letter-spacing:.12em;font-family:var(--dis)}
+  .boonCard div{margin-top:9px;font-size:13px;color:#a8bcd2;line-height:1.65}
+  .mstTitle{font-family:var(--dis);font-size:22px;color:var(--gold-hi);letter-spacing:.22em;padding-left:.22em}
   .mstRow{display:flex;gap:16px}
-  .mstCard{width:250px;padding:18px;border:1px solid var(--line);border-radius:12px;background:rgba(22,32,45,.9);cursor:pointer;text-align:center}
-  .mstCard:hover{border-color:var(--gold-hi)}
-  .mstCard.mstKept{border-color:#c9a4ff;box-shadow:0 0 14px rgba(201,164,255,.35)}
-  .mstName{font-size:18px;color:#e8dcb8;letter-spacing:2px}
-  .mstFx{font-size:12px;color:#7d90a5;margin-top:8px}
-  .mstKey{font-size:11px;color:#5b7089;margin-top:8px}
-  .mstInh{padding:7px 18px;border:1px solid rgba(201,164,255,.4);border-radius:8px;background:rgba(201,164,255,.08);color:#c9a4ff;font-size:13px;letter-spacing:1px}
+  .mstCard{position:relative;width:250px;padding:20px 18px;clip-path:var(--oct);box-shadow:inset 0 0 0 1px rgba(148,170,195,.14);background:linear-gradient(180deg,#1b2838,#101924);cursor:pointer;text-align:center;transition:transform .14s,box-shadow .15s}
+  .mstCard:hover{transform:translateY(-4px);box-shadow:inset 0 0 0 1px var(--line-hi),0 14px 30px rgba(3,6,10,.6)}
+  .mstCard.mstKept{box-shadow:inset 0 0 0 1.5px rgba(190,160,235,.7),0 0 20px rgba(180,140,225,.28)}
+  .mstName{font-size:18px;color:#eadfbe;letter-spacing:.14em;font-family:var(--dis)}
+  .mstFx{font-size:12px;color:var(--dim);margin-top:9px;line-height:1.7}
+  .mstKey{font-size:11px;color:#5f7488;margin-top:9px}
+  .mstInh{padding:8px 18px;border:1px solid rgba(190,160,235,.42);border-radius:4px;background:rgba(190,160,235,.07);color:#cbb0f0;font-size:13px;letter-spacing:.06em}
   .mstInh.hidden{display:none}
   .endbtns{display:flex;gap:14px;margin-top:8px}
-  .hint{font-size:12px;color:#6a7f95;line-height:1.9;max-width:540px}
-  .hint b{color:#9fdcff}
+  .hint{font-size:12.5px;color:var(--dim);line-height:2.05;max-width:560px;text-wrap:pretty}
+  .hint b{color:var(--gold-hi);font-weight:600}
+  #armMedals{font-size:22px;color:var(--gold-hi);font-variant-numeric:tabular-nums;letter-spacing:.04em}
+  #chBtns{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+  #chBtns .diffBtn{max-width:200px}
+  .rowbtns{display:flex;gap:10px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+  #armCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%}
+  .armCard{display:flex;flex-direction:column;gap:6px;width:auto;min-height:118px}
+  .armCard .amCost{margin-top:auto;padding-top:10px;color:var(--gold-hi);font-size:14px;font-variant-numeric:tabular-nums}
+  .armCard .amCost.poor{color:#7d6a52}
+  .armCard .amMax{margin-top:auto;padding-top:10px;color:var(--ok);font-size:13px;letter-spacing:.1em}
+  .armCard.off{cursor:default;opacity:.8}
+  .armCard.off:hover{transform:none}
 </style>
 </head>
 <body>
@@ -102,24 +142,22 @@
         <div class="title">王座防线</div>
         <div class="sub">THRONE LINE · 你的单位就是墙</div>
         <div id="diffBtns"></div>
-        <div id="chBtns" style="display:flex;gap:8px;justify-content:center;margin-top:8px"></div>
-        <button class="bigbtn" id="btnStart">开 始 战 斗</button>
-        <div style="display:flex;gap:10px;justify-content:center;margin-top:10px">
+        <div id="chBtns"></div>
+        <button class="bigbtn" id="btnStart">开始战斗</button>
+        <div class="rowbtns">
           <button class="ghostbtn" id="btnArmory">🏅 皇家军械库</button>
-          <button class="ghostbtn" id="btnDaily">🌙 每日突袭（勋章 ×2）</button>
+          <button class="ghostbtn" id="btnDaily">🌙 每日突袭 · 勋章 ×2</button>
         </div>
         <div class="hint">
-          怪不走路——从右侧旷野直扑左侧王座，<b>能阻挡的单位就是防线</b>。
-          前排（剑卫/枪兵）截住敌人贴身肉搏，远程只能躲在身后。
-          <b>人口</b>有限：升一级 +0.5、觉醒 +0.5，铺量与精英不可兼得。
-          战斗中遣散只值 5 成——<b>落子无悔</b>。波后三选一祝福，满级觉醒专精铭刻永久继承。
-          快捷键 1-6 布防 · Q 流星 W 暴雪 E 圣光 · P 暂停
+          怪不走路——直扑王座，<b>能阻挡的单位就是防线</b>。前排截住敌人贴身肉搏，远程躲在身后输出。
+          <b>人口</b>有限：升一级 +0.5、觉醒 +0.5，铺量与精英不可兼得；遣散只值五成，<b>落子无悔</b>。
+          波后三选一祝福，满级觉醒铭刻永久继承。快捷键 1-8 布防 · Q 流星 W 暴雪 E 圣光 · F 倍速 · P 暂停
         </div>
       </div>
     </div>
     <div class="ov hidden" id="ovBoon">
       <div class="apanel">
-        <div class="mstTitle">战 后 祝 福</div>
+        <div class="mstTitle">战后祝福</div>
         <div id="boonCards"></div>
       </div>
     </div>
@@ -146,11 +184,11 @@
     </div>
     <div class="ov hidden" id="ovArm">
       <div class="apanel" style="max-width:820px">
-        <div class="title" style="font-size:26px">皇 家 军 械 库</div>
-        <div class="sub">勋章在战斗中结算获得（章节/难度/每日突袭加成）· 永久生效</div>
-        <div style="font-size:22px;color:#ffd873;margin:6px 0 12px" id="armMedals">🏅 0</div>
-        <div id="armCards" style="display:flex;flex-wrap:wrap;gap:10px"></div>
-        <button class="ghostbtn" id="btnArmBack" style="margin-top:14px">返 回</button>
+        <div class="title" style="font-size:26px">皇家军械库</div>
+        <div class="sub">勋章在战斗中结算获得 · 章节/难度/每日突袭加成 · 永久生效</div>
+        <div id="armMedals">🏅 0</div>
+        <div id="armCards"></div>
+        <button class="ghostbtn" id="btnArmBack">返 回</button>
       </div>
     </div>
   </div>
