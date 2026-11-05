@@ -807,10 +807,18 @@ function step(dt) {
 }
 
 /* ============ 渲染 ============ */
+/* 高分屏/手机 DPR 感知：物理分辨率渲染，CSS 尺寸不变（zoom 适配照旧） */
+const DPR = Math.min(2, Math.max(1, (typeof window !== 'undefined' && window.devicePixelRatio) || 1));
+if (DPR > 1) {
+  cvs.width = W * DPR; cvs.height = HT * DPR;
+  cvs.style.width = W + 'px'; cvs.style.height = HT + 'px';
+  ctx.scale(DPR, DPR);
+}
 const bg = document.createElement('canvas');
 function renderBg() {
-  bg.width = W; bg.height = HT;
+  bg.width = W * DPR; bg.height = HT * DPR;
   const b = bg.getContext('2d');
+  b.scale(DPR, DPR);
   /* 大地：上深下暖的纵向渐变（唯一光源：左上月光） */
   const g = b.createLinearGradient(0, 70, 0, HT);
   g.addColorStop(0, '#232d26'); g.addColorStop(0.55, '#2b3527'); g.addColorStop(1, '#333a28');
@@ -887,7 +895,7 @@ function draw() {
   ctx.clearRect(0, 0, cvs.width, cvs.height);
   ctx.save();
   if (game.shake > 0) ctx.translate((RT() - 0.5) * game.shake * 15, (RT() - 0.5) * game.shake * 11);
-  ctx.drawImage(bg, 0, 0);
+  ctx.drawImage(bg, 0, 0, W, HT);
   /* 王座城堡：石砌三层 + 角楼尖顶 + 旗 + 灯窗（呼吸辉光保留） */
   const tx = gx(THR().c), ty = gy(THR().r);
   ctx.save();
@@ -1801,8 +1809,7 @@ function evPos(ev) {
 }
 cvs.addEventListener('mousemove', (ev) => { const [x, y] = evPos(ev); mouse.x = x; mouse.y = y; mouse.on = true; });
 cvs.addEventListener('mouseleave', () => { mouse.on = false; });
-cvs.addEventListener('click', (ev) => {
-  const [x, y] = evPos(ev);
+const handleTap = (ev, x, y) => {
   if (game.aimSpell) { castSpell(game.aimSpell, x, y); syncHud(); return; }
   const [c, r] = cellOf(x, y);
   if (game.build) {
@@ -1812,6 +1819,23 @@ cvs.addEventListener('click', (ev) => {
   }
   const u = unitAt(c, r);
   if (u) select(u); else { game.sel = null; hideSel(); }
+};
+cvs.addEventListener('click', (ev) => { const [x, y] = evPos(ev); handleTap(ev, x, y); });
+/* touch: pointerdown fires instantly (preventDefault suppresses ghost click), preview follows fingertip */
+cvs.addEventListener('pointerdown', (ev) => {
+  if (ev.pointerType !== 'touch') return;
+  ev.preventDefault();
+  const [x, y] = evPos(ev); mouse.x = x; mouse.y = y; mouse.on = true;
+  handleTap(ev, x, y);
+  setTimeout(() => { mouse.on = false; }, 900);
+});
+/* right-click / long-press equivalent: dismiss unit (mobile uses the sell button in the panel) */
+cvs.addEventListener('contextmenu', (ev) => {
+  ev.preventDefault();
+  const [x, y] = evPos(ev);
+  const [c2, r2] = cellOf(x, y);
+  const u2 = unitAt(c2, r2);
+  if (u2) { sellUnit(u2); syncHud(); }
 });
 document.addEventListener('keydown', (ev) => {
   const k = ev.key.toLowerCase();
