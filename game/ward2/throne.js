@@ -821,25 +821,71 @@ function draw() {
   ctx.save();
   if (game.shake > 0) ctx.translate((RT() - 0.5) * game.shake * 15, (RT() - 0.5) * game.shake * 11);
   ctx.drawImage(bg, 0, 0);
-  /* 王座：城堡剪影 + 呼吸辉光 */
+  /* 王座城堡：石砌三层 + 角楼尖顶 + 旗 + 灯窗（呼吸辉光保留） */
   const tx = gx(THR().c), ty = gy(THR().r);
   ctx.save();
-  const tg = ctx.createRadialGradient(tx, ty, 10, tx, ty, 86 + Math.sin(game.t * 2) * 5);
+  const t2 = game.t;
+  const tg = ctx.createRadialGradient(tx, ty, 10, tx, ty, 86 + Math.sin(t2 * 2) * 5);
   tg.addColorStop(0, 'rgba(130,190,255,0.22)'); tg.addColorStop(1, 'rgba(130,190,255,0)');
-  ctx.fillStyle = tg; ctx.beginPath(); ctx.arc(tx, ty, 86 + Math.sin(game.t * 2) * 5, 0, 7); ctx.fill();
-  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(tx + 6, ty + 32, 34, 8, 0, 0, 7); ctx.fill();
-  const sg = ctx.createLinearGradient(tx - 26, 0, tx + 26, 0);
-  sg.addColorStop(0, '#4c6480'); sg.addColorStop(0.5, '#3d5570'); sg.addColorStop(1, '#2b3c52');
-  ctx.fillStyle = sg;
-  ctx.fillRect(tx - 26, ty - 20, 52, 46);                       /* 主体 */
-  ctx.fillRect(tx - 30, ty - 30, 12, 56); ctx.fillRect(tx + 18, ty - 30, 12, 56); /* 双塔 */
-  for (const dx2 of [-30, -22, -6, 2, 14, 18]) ctx.fillRect(tx + dx2, ty - 26, 5, 7); /* 城齿 */
-  ctx.fillStyle = '#243348'; ctx.fillRect(tx - 7, ty + 6, 14, 20);                    /* 拱门 */
-  ctx.beginPath(); ctx.arc(tx, ty + 6, 7, Math.PI, 0); ctx.fill();
-  ctx.fillStyle = sg; ctx.beginPath(); ctx.moveTo(tx, ty - 56); ctx.lineTo(tx + 13, ty - 26); ctx.lineTo(tx - 13, ty - 26); ctx.closePath(); ctx.fill(); /* 尖塔 */
+  ctx.fillStyle = tg; ctx.beginPath(); ctx.arc(tx, ty, 86 + Math.sin(t2 * 2) * 5, 0, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(tx + 8, ty + 34, 40, 9, 0, 0, 7); ctx.fill();
+  const EOC = () => { ctx.strokeStyle = 'rgba(10,16,24,0.8)'; ctx.lineWidth = 1.2; ctx.stroke(); };
+  const stoneG = (x0, x1) => { const g = ctx.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, '#54708e'); g.addColorStop(0.45, '#3d5570'); g.addColorStop(1, '#25344a'); return g; };
+  const crenel = (x0, x1, yy, w) => { /* 城齿 */
+    for (let cx2 = x0; cx2 + w <= x1 + 0.1; cx2 += w * 2) { ctx.fillStyle = '#46617e'; ctx.fillRect(cx2, yy, w, 5); ctx.strokeRect(cx2, yy, w, 5); }
+  };
+  /* 外墙（前） */
+  ctx.fillStyle = stoneG(tx - 36, tx + 36);
+  ctx.beginPath(); ctx.rect(tx - 34, ty + 2, 68, 30); ctx.fill(); EOC();
+  crenel(tx - 32, tx + 32, ty - 3, 4.6);
+  /* 石砖缝 */
+  ctx.strokeStyle = 'rgba(14,22,32,0.35)'; ctx.lineWidth = 0.8;
+  for (let row = 0; row < 3; row++) { ctx.beginPath(); ctx.moveTo(tx - 33, ty + 9 + row * 8); ctx.lineTo(tx + 33, ty + 9 + row * 8); ctx.stroke(); }
+  for (let col = 0; col < 7; col++) { const bx = tx - 30 + col * 10; for (let row = 0; row < 3; row++) { ctx.beginPath(); ctx.moveTo(bx + (row % 2) * 5, ty + 3 + row * 8); ctx.lineTo(bx + (row % 2) * 5, ty + 9 + row * 8); ctx.stroke(); } }
+  /* 主堡（后） */
+  ctx.fillStyle = stoneG(tx - 16, tx + 16);
+  ctx.beginPath(); ctx.rect(tx - 15, ty - 26, 30, 32); ctx.fill(); EOC();
+  crenel(tx - 14, tx + 14, ty - 31, 4);
+  /* 左右角楼 */
+  for (const s of [-1, 1]) {
+    ctx.fillStyle = stoneG(tx + s * 30 - 7, tx + s * 30 + 7);
+    ctx.beginPath(); ctx.rect(tx + s * 30 - 6.5, ty - 22, 13, 54); ctx.fill(); EOC();
+    const cg2 = ctx.createLinearGradient(tx + s * 30 - 8, 0, tx + s * 30 + 8, 0);
+    cg2.addColorStop(0, '#5a7898'); cg2.addColorStop(1, '#2c3f58');
+    ctx.fillStyle = cg2;
+    ctx.beginPath(); ctx.moveTo(tx + s * 30, ty - 44); ctx.lineTo(tx + s * 30 + 8.5, ty - 22); ctx.lineTo(tx + s * 30 - 8.5, ty - 22); ctx.closePath(); ctx.fill(); EOC();
+    ctx.fillStyle = '#8fb8e0'; /* 角楼灯窗 */
+    ctx.fillRect(tx + s * 30 - 1.7, ty - 14, 3.4, 5);
+    ctx.fillStyle = 'rgba(255,220,120,' + (0.55 + 0.3 * Math.sin(t2 * 2.2 + s)) + ')';
+    ctx.fillRect(tx + s * 30 - 1.2, ty - 13.4, 2.4, 3.8);
+  }
+  /* 中央尖顶 + 宝珠 */
+  const spg = ctx.createLinearGradient(tx - 10, 0, tx + 10, 0);
+  spg.addColorStop(0, '#6488ac'); spg.addColorStop(1, '#31465e');
+  ctx.fillStyle = spg;
+  ctx.beginPath(); ctx.moveTo(tx, ty - 56); ctx.lineTo(tx + 11, ty - 30); ctx.lineTo(tx - 11, ty - 30); ctx.closePath(); ctx.fill(); EOC();
   const cg = ctx.createRadialGradient(tx, ty - 58, 1, tx, ty - 58, 10);
   cg.addColorStop(0, '#e8f6ff'); cg.addColorStop(0.4, '#8fd0ff'); cg.addColorStop(1, 'rgba(143,208,255,0)');
-  ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(tx, ty - 58, 10 + Math.sin(game.t * 3) * 1.5, 0, 7); ctx.fill();
+  ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(tx, ty - 58, 10 + Math.sin(t2 * 3) * 1.5, 0, 7); ctx.fill();
+  /* 大王旗（主堡顶飘动） */
+  ctx.strokeStyle = '#1c2838'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(tx + 15, ty - 31); ctx.lineTo(tx + 15, ty - 47); ctx.stroke();
+  const wav = Math.sin(t2 * 4) * 1.6;
+  ctx.fillStyle = '#c9a45a';
+  ctx.beginPath(); ctx.moveTo(tx + 15, ty - 47); ctx.quadraticCurveTo(tx + 22, ty - 45 + wav, tx + 29, ty - 44);
+  ctx.lineTo(tx + 25, ty - 40 + wav * 0.5); ctx.lineTo(tx + 21, ty - 41.5); ctx.quadraticCurveTo(tx + 17, ty - 40, tx + 15, ty - 39.5); ctx.closePath(); ctx.fill(); EOC();
+  /* 正门：拱 + 灯 + 吊闸纹 */
+  ctx.fillStyle = '#141f2e';
+  ctx.beginPath(); ctx.rect(tx - 7, ty + 12, 14, 20); ctx.arc(tx, ty + 12, 7, Math.PI, 0); ctx.fill();
+  ctx.strokeStyle = 'rgba(90,120,150,0.5)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(tx, ty + 12, 8.6, Math.PI, 0); ctx.stroke();
+  ctx.strokeStyle = 'rgba(60,80,105,0.6)';
+  for (let i2 = -1; i2 <= 1; i2++) { ctx.beginPath(); ctx.moveTo(tx + i2 * 4, ty + 12); ctx.lineTo(tx + i2 * 4, ty + 30); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(255,215,120,' + (0.5 + 0.25 * Math.sin(t2 * 3)) + ')'; /* 门灯 */
+  ctx.beginPath(); ctx.arc(tx - 11, ty + 10, 2.4, 0, 7); ctx.arc(tx + 11, ty + 10, 2.4, 0, 7); ctx.fill();
+  /* 主堡灯窗 */
+  ctx.fillStyle = 'rgba(255,220,130,0.75)';
+  ctx.fillRect(tx - 6.5, ty - 18, 3.4, 5.5); ctx.fillRect(tx + 3.1, ty - 18, 3.4, 5.5);
   ctx.restore();
   /* 要塞基座 */
   for (const [c, r] of FORTL()) {
@@ -941,56 +987,211 @@ function drawUnit(u) {
   ctx.fillStyle = 'rgba(0,0,0,0.30)'; ctx.beginPath(); ctx.ellipse(x + 3, y + 13, 13, 4.5, 0, 0, 7); ctx.fill();
   const lb = u.atkT > 0 ? u.atkT / 0.14 : 0;
   if (lb > 0) { ctx.save(); ctx.translate(x, y); ctx.scale(1 + lb * 0.14, 1 - lb * 0.05); ctx.translate(-x, -y); }
-  if (d.block) {
-    /* 方盾：纵向渐变 + 盾徽 + 受光描边 */
-    const ug = ctx.createLinearGradient(x, y - 18, x, y + 19);
-    ug.addColorStop(0, shade(d.color, 1.28)); ug.addColorStop(0.5, d.color); ug.addColorStop(1, shade(d.color, 0.62));
-    ctx.fillStyle = ug;
+  /* —— Q 版盔甲战士：描边+分层+受光，逐职业手绘 —— */
+  const C = d.color, OUT = 'rgba(14,20,28,0.9)';
+  const gM = () => { const gg = ctx.createLinearGradient(x - 9, y - 20, x + 9, y + 13); gg.addColorStop(0, shade(C, 1.34)); gg.addColorStop(0.55, C); gg.addColorStop(1, shade(C, 0.62)); return gg; };
+  const gDark = () => { const gg = ctx.createLinearGradient(x - 9, y - 8, x + 9, y + 13); gg.addColorStop(0, shade(C, 1.05)); gg.addColorStop(1, shade(C, 0.55)); return gg; };
+  const stroke = (lw) => { ctx.strokeStyle = OUT; ctx.lineWidth = lw || 1.3; ctx.stroke(); };
+  const GOLD = '#c9a45a', GOLD_D = '#8a6a33', SKIN = '#d8a878', LEATHER = '#7a5a3e', WOOD = '#a8825a';
+  const t = game.t;
+  const legPair = () => { /* 腿甲 */
+    ctx.fillStyle = gDark();
+    ctx.beginPath(); ctx.roundRect(x - 7, y + 4, 5.6, 9, 2); ctx.fill(); stroke(1);
+    ctx.beginPath(); ctx.roundRect(x + 1.4, y + 4, 5.6, 9, 2); ctx.fill(); stroke(1);
+  };
+  const torso = (w1, w2, h, g) => { /* 胸甲（上宽下窄） */
+    ctx.fillStyle = g || gM();
     ctx.beginPath();
-    ctx.moveTo(x - 17, y - 18); ctx.lineTo(x + 17, y - 18); ctx.lineTo(x + 17, y + 8);
-    ctx.lineTo(x, y + 19); ctx.lineTo(x - 17, y + 8); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(x - 16, y - 17); ctx.lineTo(x + 16, y - 17); ctx.stroke();
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-    ctx.beginPath(); ctx.moveTo(x - 16, y - 17); ctx.lineTo(x - 16, y + 7); ctx.lineTo(x, y + 17); ctx.stroke();
-    ctx.fillStyle = 'rgba(12,16,24,0.4)';
-    ctx.beginPath(); ctx.moveTo(x, y - 9); ctx.lineTo(x + 6, y); ctx.lineTo(x, y + 9); ctx.lineTo(x - 6, y); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.22)';
-    ctx.beginPath(); ctx.moveTo(x, y - 9); ctx.lineTo(x + 6, y); ctx.lineTo(x, y); ctx.closePath(); ctx.fill();
-  } else {
-    /* 远程/辅助：头+身剪影，受光在左上 */
-    const ug2 = ctx.createLinearGradient(x - 10, y - 20, x + 10, y + 12);
-    ug2.addColorStop(0, shade(d.color, 1.3)); ug2.addColorStop(1, shade(d.color, 0.68));
-    ctx.fillStyle = ug2;
-    ctx.beginPath(); ctx.moveTo(x - 9, y + 12); ctx.lineTo(x - 6, y - 6); ctx.lineTo(x + 6, y - 6); ctx.lineTo(x + 9, y + 12); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.arc(x, y - 10, 5.2, 0, 7); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.28)'; ctx.beginPath(); ctx.arc(x - 1.6, y - 11.6, 2.1, 0, 7); ctx.fill();
-    if (u.type === 'mage' || u.type === 'holy') {
-      ctx.strokeStyle = '#c9a06a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + 9, y + 11); ctx.lineTo(x + 9, y - 16); ctx.stroke();
-      ctx.fillStyle = u.type === 'mage' ? '#b08aff' : '#ffd873';
-      const og = ctx.createRadialGradient(x + 9, y - 18, 0.5, x + 9, y - 18, 5);
-      og.addColorStop(0, '#fff'); og.addColorStop(0.45, u.type === 'mage' ? '#b08aff' : '#ffd873'); og.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = og; ctx.beginPath(); ctx.arc(x + 9, y - 18, 5, 0, 7); ctx.fill();
+    ctx.moveTo(x - w1, y - h * 0.45); ctx.lineTo(x + w1, y - h * 0.45);
+    ctx.lineTo(x + w2, y + h * 0.55); ctx.lineTo(x - w2, y + h * 0.55);
+    ctx.closePath(); ctx.fill(); stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x - w1 + 1.5, y - h * 0.45 + 1.5); ctx.lineTo(x + w1 - 1.5, y - h * 0.45 + 1.5); ctx.stroke();
+  };
+  const pauldrons = (r) => { /* 肩甲 */
+    for (const s of [-1, 1]) {
+      const gg = ctx.createRadialGradient(x + s * 9 - 1.5, y - 8 - 1.5, 0.5, x + s * 9, y - 8, r + 1);
+      gg.addColorStop(0, shade(C, 1.5)); gg.addColorStop(1, shade(C, 0.72));
+      ctx.fillStyle = gg;
+      ctx.beginPath(); ctx.arc(x + s * 9.5, y - 8, r, Math.PI, 0); ctx.closePath(); ctx.fill(); stroke(1.2);
     }
-    if (u.type === 'arch') { ctx.strokeStyle = '#c9a06a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(x - 10, y - 2, 7, -1.2, 1.2); ctx.stroke(); }
-    if (u.type === 'xbow') {
-      ctx.strokeStyle = '#c9a06a'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(x - 12, y - 9); ctx.quadraticCurveTo(x - 4, y - 4, x - 12, y + 2); ctx.stroke();
-      ctx.strokeStyle = '#8a7250'; ctx.beginPath(); ctx.moveTo(x - 13, y - 4); ctx.lineTo(x + 2, y - 4); ctx.stroke();
-      ctx.strokeStyle = 'rgba(230,230,200,0.8)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x - 12, y - 9); ctx.lineTo(x + 1, y - 4); ctx.lineTo(x - 12, y + 2); ctx.stroke();
-    }
-    if (u.type === 'drum') {
-      ctx.fillStyle = '#8a6040'; ctx.beginPath(); ctx.ellipse(x, y + 3, 9, 7, 0, 0, 7); ctx.fill();
-      ctx.fillStyle = '#e8d8b0'; ctx.beginPath(); ctx.ellipse(x, y + 1, 9, 4.5, 0, 0, 7); ctx.fill();
-      ctx.strokeStyle = '#c9a44a'; ctx.lineWidth = 1.4;
-      const bt = Math.sin(game.t * 8);
-      ctx.beginPath(); ctx.moveTo(x - 9, y - 6); ctx.lineTo(x - 4, y - 1 + bt * 2); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(x + 9, y - 6); ctx.lineTo(x + 4, y - 1 - bt * 2); ctx.stroke();
-      ctx.strokeStyle = 'rgba(220,190,110,' + (0.35 + 0.2 * bt) + ')';
-      ctx.beginPath(); ctx.arc(x, y, d.range * TILE * (0.5 + 0.12 * bt), 0, 7); ctx.stroke();
-      ctx.fillStyle = '#c9a44a'; ctx.beginPath(); ctx.moveTo(x + 7, y - 14); ctx.lineTo(x + 7, y - 22); ctx.lineTo(x + 14, y - 19); ctx.closePath(); ctx.fill();
-    }
-    if (u.type === 'cannon') { ctx.fillStyle = shade(d.color, 0.75); ctx.fillRect(x - 3, y - 16, 6, 12); ctx.fillStyle = '#242c36'; ctx.beginPath(); ctx.arc(x, y - 17, 3.2, 0, 7); ctx.fill(); }
+  };
+  const helm = (vr) => { /* 圆顶盔+面甲缝 */
+    const hg = ctx.createRadialGradient(x - 2, y - 15, 1, x, y - 12, 7.5);
+    hg.addColorStop(0, shade(C, 1.55)); hg.addColorStop(1, shade(C, 0.8));
+    ctx.fillStyle = hg;
+    ctx.beginPath(); ctx.arc(x, y - 12, 6.2, Math.PI, 0); ctx.lineTo(x + 6.2, y - 10); ctx.lineTo(x - 6.2, y - 10); ctx.closePath(); ctx.fill(); stroke(1.2);
+    ctx.fillStyle = 'rgba(10,14,20,0.8)';
+    if (vr === 'v') ctx.fillRect(x - 1.1, y - 13.5, 2.2, 4.6); else { ctx.fillRect(x - 4.6, y - 12.4, 9.2, 1.9); }
+  };
+  if (u.type === 'sword') {
+    legPair(); torso(7.5, 5.8, 13); pauldrons(4);
+    ctx.fillStyle = SKIN; ctx.fillRect(x - 3.4, y - 10.5, 6.8, 3); /* 颈 */
+    helm('v');
+    /* 顶天剑：右手侧上举 */
+    ctx.save(); ctx.translate(x + 11, y - 6); ctx.rotate(-0.32);
+    const bg = ctx.createLinearGradient(-1.6, -20, 1.6, 0); bg.addColorStop(0, '#eef4fa'); bg.addColorStop(1, '#8fa2b8');
+    ctx.fillStyle = bg;
+    ctx.beginPath(); ctx.moveTo(0, -22); ctx.lineTo(2, -18); ctx.lineTo(2, -2); ctx.lineTo(-2, -2); ctx.lineTo(-2, -18); ctx.closePath(); ctx.fill(); stroke(1);
+    ctx.fillStyle = GOLD; ctx.fillRect(-4.5, -2.6, 9, 2.4); ctx.fillRect(-1.3, -0.2, 2.6, 4); stroke(0.9);
+    ctx.restore();
+    /* 鸢盾：左手侧 */
+    const sx = x - 10.5;
+    const sg = ctx.createLinearGradient(sx - 6, y - 12, sx + 6, y + 10);
+    sg.addColorStop(0, shade(C, 1.3)); sg.addColorStop(1, shade(C, 0.7));
+    ctx.fillStyle = sg;
+    ctx.beginPath(); ctx.moveTo(sx - 6.4, y - 11); ctx.lineTo(sx + 6.4, y - 11); ctx.lineTo(sx + 6.4, y + 2); ctx.quadraticCurveTo(sx, y + 12, sx - 6.4, y + 2); ctx.closePath(); ctx.fill(); stroke(1.3);
+    ctx.strokeStyle = GOLD; ctx.lineWidth = 1.1; ctx.stroke();
+    ctx.fillStyle = GOLD;
+    ctx.beginPath(); ctx.moveTo(sx, y - 6.5); ctx.lineTo(sx + 3.4, y - 1.5); ctx.lineTo(sx, y + 3.5); ctx.lineTo(sx - 3.4, y - 1.5); ctx.closePath(); ctx.fill();
+  } else if (u.type === 'pike') {
+    legPair(); torso(6.8, 5.6, 13);
+    ctx.fillStyle = SKIN; ctx.fillRect(x - 3.2, y - 10.5, 6.4, 3);
+    /* 尖顶盔 */
+    const hg = ctx.createLinearGradient(x - 5, y - 19, x + 5, y - 9); hg.addColorStop(0, shade(C, 1.45)); hg.addColorStop(1, shade(C, 0.75));
+    ctx.fillStyle = hg;
+    ctx.beginPath(); ctx.moveTo(x - 5.6, y - 10); ctx.lineTo(x - 4.6, y - 15); ctx.lineTo(x, y - 19.5); ctx.lineTo(x + 4.6, y - 15); ctx.lineTo(x + 5.6, y - 10); ctx.closePath(); ctx.fill(); stroke(1.2);
+    ctx.fillStyle = 'rgba(10,14,20,0.8)'; ctx.fillRect(x - 4, y - 13, 8, 1.8);
+    /* 斜持长枪 */
+    ctx.save(); ctx.translate(x + 8, y - 2); ctx.rotate(0.42);
+    ctx.strokeStyle = WOOD; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(0, 12); ctx.lineTo(0, -22); ctx.stroke();
+    ctx.fillStyle = '#c8d4e0';
+    ctx.beginPath(); ctx.moveTo(0, -29); ctx.lineTo(2.6, -20.5); ctx.lineTo(0, -18.5); ctx.lineTo(-2.6, -20.5); ctx.closePath(); ctx.fill(); stroke(1);
+    ctx.strokeStyle = '#c04a3a'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(-2.4, -17.5); ctx.lineTo(-4.5, -13.5); ctx.moveTo(2.4, -17.5); ctx.lineTo(4.5, -13.5); ctx.stroke();
+    ctx.restore();
+    /* 腰带 */
+    ctx.fillStyle = LEATHER; ctx.fillRect(x - 6.4, y + 2.5, 12.8, 2.4);
+  } else if (u.type === 'arch') {
+    /* 兜帽绿装游侠 */
+    ctx.fillStyle = gDark();
+    ctx.beginPath(); ctx.moveTo(x - 6.5, y + 13); ctx.quadraticCurveTo(x - 8, y - 4, x - 4, y - 8); ctx.lineTo(x + 4, y - 8); ctx.quadraticCurveTo(x + 8, y - 4, x + 6.5, y + 13); ctx.closePath(); ctx.fill(); stroke();
+    const hg = ctx.createLinearGradient(x - 6, y - 21, x + 6, y - 8); hg.addColorStop(0, shade(C, 1.38)); hg.addColorStop(1, shade(C, 0.72));
+    ctx.fillStyle = hg;
+    ctx.beginPath(); ctx.moveTo(x - 6.6, y - 7.5); ctx.quadraticCurveTo(x - 7, y - 17, x, y - 20.5); ctx.quadraticCurveTo(x + 7, y - 17, x + 6.6, y - 7.5); ctx.closePath(); ctx.fill(); stroke(1.2);
+    ctx.fillStyle = 'rgba(12,18,14,0.75)';
+    ctx.beginPath(); ctx.ellipse(x + 0.5, y - 11, 3.6, 3, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = SKIN; ctx.beginPath(); ctx.arc(x + 1.2, y - 11.8, 1.5, 0, 7); ctx.fill();
+    /* 背箭囊 */
+    ctx.save(); ctx.translate(x - 7.5, y - 6); ctx.rotate(-0.35);
+    ctx.fillStyle = LEATHER; ctx.fillRect(-2.2, -8, 4.4, 11); stroke(1);
+    for (const ax of [-1.3, 0, 1.3]) { ctx.strokeStyle = '#e8e0c8'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(ax, -8); ctx.lineTo(ax, -12.5); ctx.stroke(); ctx.fillStyle = '#c04a3a'; ctx.fillRect(ax - 0.8, -13.6, 1.6, 1.6); }
+    ctx.restore();
+    /* 长弓 */
+    ctx.strokeStyle = WOOD; ctx.lineWidth = 1.9;
+    ctx.beginPath(); ctx.arc(x + 9.5, y - 1, 8.6, -1.35, 1.35); ctx.stroke();
+    ctx.strokeStyle = 'rgba(240,240,225,0.85)'; ctx.lineWidth = 0.9;
+    ctx.beginPath(); ctx.moveTo(x + 9.5 + 8.6 * Math.cos(-1.35), y - 1 + 8.6 * Math.sin(-1.35)); ctx.lineTo(x + 9.5 + 8.6 * Math.cos(1.35), y - 1 + 8.6 * Math.sin(1.35)); ctx.stroke();
+  } else if (u.type === 'mage') {
+    /* 法袍：下摆波浪 */
+    const rg = ctx.createLinearGradient(x - 8, y - 12, x + 8, y + 13); rg.addColorStop(0, shade(C, 1.3)); rg.addColorStop(1, shade(C, 0.6));
+    ctx.fillStyle = rg;
+    ctx.beginPath(); ctx.moveTo(x - 4.5, y - 9); ctx.lineTo(x + 4.5, y - 9);
+    ctx.quadraticCurveTo(x + 9.5, y + 6, x + 8.5, y + 13);
+    for (let i2 = 0; i2 < 4; i2++) { const wx2 = x + 8.5 - i2 * 4.25; ctx.quadraticCurveTo(wx2 - 2.1, y + 9.5, wx2 - 4.25, y + 13); }
+    ctx.quadraticCurveTo(x - 9.5, y + 6, x - 4.5, y - 9); ctx.closePath(); ctx.fill(); stroke();
+    /* 大袖 */
+    ctx.fillStyle = shade(C, 0.85);
+    ctx.beginPath(); ctx.ellipse(x - 8.5, y - 2, 3.4, 5.2, 0.4, 0, 7); ctx.fill(); stroke(1);
+    /* 尖帽 */
+    const hg = ctx.createLinearGradient(x - 6, y - 24, x + 6, y - 9); hg.addColorStop(0, shade(C, 1.42)); hg.addColorStop(1, shade(C, 0.7));
+    ctx.fillStyle = hg;
+    ctx.beginPath(); ctx.moveTo(x - 7, y - 9.5); ctx.quadraticCurveTo(x - 5, y - 16, x + 2.5, y - 21.5); ctx.quadraticCurveTo(x + 3.5, y - 15, x + 7, y - 9.5); ctx.closePath(); ctx.fill(); stroke(1.2);
+    ctx.fillStyle = '#ffe89a';
+    ctx.beginPath(); ctx.arc(x - 1.6, y - 14.5, 1.2, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(12,10,20,0.8)'; ctx.beginPath(); ctx.ellipse(x + 0.5, y - 10.6, 3.4, 2.2, 0, 0, 7); ctx.fill();
+    /* 法杖+悬浮奥球 */
+    ctx.strokeStyle = WOOD; ctx.lineWidth = 1.9; ctx.beginPath(); ctx.moveTo(x + 9, y + 12); ctx.quadraticCurveTo(x + 7.5, y - 6, x + 9.5, y - 15); ctx.stroke();
+    const og = ctx.createRadialGradient(x + 9.5, y - 17.5, 0.5, x + 9.5, y - 17.5, 5.5);
+    og.addColorStop(0, '#fff'); og.addColorStop(0.45, '#b08aff'); og.addColorStop(1, 'rgba(176,138,255,0)');
+    ctx.fillStyle = og; ctx.beginPath(); ctx.arc(x + 9.5, y - 17.5, 5.5 + Math.sin(t * 4) * 0.6, 0, 7); ctx.fill();
+  } else if (u.type === 'holy') {
+    /* 白金色袍 + 光环 */
+    const rg = ctx.createLinearGradient(x - 8, y - 12, x + 8, y + 13); rg.addColorStop(0, '#f2ecd8'); rg.addColorStop(1, '#b8ab8a');
+    ctx.fillStyle = rg;
+    ctx.beginPath(); ctx.moveTo(x - 4.5, y - 9); ctx.lineTo(x + 4.5, y - 9);
+    ctx.quadraticCurveTo(x + 9, y + 6, x + 8, y + 13); ctx.lineTo(x - 8, y + 13);
+    ctx.quadraticCurveTo(x - 9, y + 6, x - 4.5, y - 9); ctx.closePath(); ctx.fill(); stroke();
+    ctx.fillStyle = GOLD; ctx.fillRect(x - 1.6, y - 8, 3.2, 12); /* 金绶带 */
+    ctx.fillStyle = 'rgba(16,22,30,0.9)';
+    ctx.beginPath(); ctx.arc(x, y - 13, 4.6, 0, 7); ctx.fill();  /* 头部暗兜 */
+    ctx.fillStyle = SKIN; ctx.beginPath(); ctx.arc(x, y - 12.4, 3.2, 0, 7); ctx.fill();
+    const ag = ctx.createRadialGradient(x, y - 21, 0.5, x, y - 21, 7);
+    ag.addColorStop(0, 'rgba(255,240,170,0.95)'); ag.addColorStop(1, 'rgba(255,240,170,0)');
+    ctx.strokeStyle = '#ffe89a'; ctx.lineWidth = 1.6;
+    ctx.save(); ctx.translate(x, y - 21); ctx.scale(1, 0.36); ctx.beginPath(); ctx.arc(0, 0, 6.5, 0, 7); ctx.stroke(); ctx.restore();
+    /* 十字杖 */
+    ctx.strokeStyle = GOLD; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(x + 9, y + 12); ctx.lineTo(x + 9, y - 13); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 5.8, y - 10); ctx.lineTo(x + 12.2, y - 10); ctx.stroke();
+    const og2 = ctx.createRadialGradient(x + 9, y - 14, 0.3, x + 9, y - 14, 4);
+    og2.addColorStop(0, '#fff'); og2.addColorStop(1, 'rgba(255,230,140,0)');
+    ctx.fillStyle = og2; ctx.beginPath(); ctx.arc(x + 9, y - 14, 4 + Math.sin(t * 3) * 0.5, 0, 7); ctx.fill();
+  } else if (u.type === 'cannon') {
+    /* 石台 + 黑铁炮 */
+    const sg2 = ctx.createLinearGradient(x - 12, y - 2, x + 12, y + 13); sg2.addColorStop(0, '#6a7482'); sg2.addColorStop(1, '#3a4450');
+    ctx.fillStyle = sg2;
+    ctx.beginPath(); ctx.moveTo(x - 13, y + 13); ctx.lineTo(x - 10, y); ctx.lineTo(x + 10, y); ctx.lineTo(x + 13, y + 13); ctx.closePath(); ctx.fill(); stroke();
+    ctx.strokeStyle = 'rgba(10,14,20,0.5)'; ctx.lineWidth = 0.8;
+    for (const yy of [4.5, 9]) { ctx.beginPath(); ctx.moveTo(x - 12 + (yy - 4.5) * 0.4, y + yy); ctx.lineTo(x + 12 - (yy - 4.5) * 0.4, y + yy); ctx.stroke(); }
+    const wg = ctx.createLinearGradient(x - 9, y - 12, x + 6, y); wg.addColorStop(0, '#5a6674'); wg.addColorStop(0.5, '#333d49'); wg.addColorStop(1, '#1c242e');
+    ctx.fillStyle = wg;
+    ctx.beginPath(); ctx.roundRect(x - 9.5, y - 11, 15, 10, 3); ctx.fill(); stroke(1.3);
+    ctx.save(); ctx.translate(x + 2, y - 6.5); ctx.rotate(-0.42);
+    const bgd = ctx.createLinearGradient(0, -3, 16, 3); bgd.addColorStop(0, '#39434f'); bgd.addColorStop(1, '#161d26');
+    ctx.fillStyle = bgd; ctx.beginPath(); ctx.roundRect(0, -3.4, 15, 6.8, 2.4); ctx.fill(); stroke(1.2);
+    ctx.fillStyle = '#0c1116'; ctx.beginPath(); ctx.arc(15, 0, 3.4, 0, 7); ctx.fill();
+    ctx.strokeStyle = GOLD_D; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(15, 0, 3.4, -1.1, 1.1); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = GOLD; ctx.beginPath(); ctx.arc(x - 6.5, y - 6.5, 1.1, 0, 7); ctx.fill();
+  } else if (u.type === 'xbow') {
+    legPair(); torso(6.8, 5.6, 13); pauldrons(3.4);
+    ctx.fillStyle = SKIN; ctx.fillRect(x - 3.2, y - 10.5, 6.4, 3);
+    /* 钢盔护颊 */
+    const hg = ctx.createLinearGradient(x - 6, y - 18, x + 6, y - 9); hg.addColorStop(0, shade(C, 1.45)); hg.addColorStop(1, shade(C, 0.75));
+    ctx.fillStyle = hg;
+    ctx.beginPath(); ctx.arc(x, y - 11.5, 5.8, Math.PI, 0); ctx.lineTo(x + 5.8, y - 8); ctx.lineTo(x + 3.4, y - 8); ctx.lineTo(x + 3.4, y - 11); ctx.lineTo(x - 3.4, y - 11); ctx.lineTo(x - 3.4, y - 8); ctx.lineTo(x - 5.8, y - 8); ctx.closePath(); ctx.fill(); stroke(1.2);
+    ctx.fillStyle = 'rgba(10,14,20,0.75)'; ctx.fillRect(x - 3, y - 12.5, 6, 1.8);
+    /* 腰挂短矢 */
+    ctx.fillStyle = LEATHER; ctx.fillRect(x - 7.5, y + 1, 4.6, 5.5); stroke(0.9);
+    ctx.strokeStyle = '#d8d0b0'; ctx.lineWidth = 0.9;
+    for (const ax of [-6.7, -5.2, -3.7]) { ctx.beginPath(); ctx.moveTo(ax, y + 1); ctx.lineTo(ax, y - 2.6); ctx.stroke(); }
+    /* 平射钢弩 */
+    ctx.save(); ctx.translate(x + 8, y - 4);
+    ctx.fillStyle = WOOD; ctx.beginPath(); ctx.roundRect(-3, -1.6, 11, 3.2, 1.2); ctx.fill(); stroke(1);
+    ctx.strokeStyle = '#9aa8b8'; ctx.lineWidth = 1.7;
+    ctx.beginPath(); ctx.moveTo(6.5, -7); ctx.quadraticCurveTo(9.5, 0, 6.5, 7); ctx.stroke();
+    ctx.strokeStyle = 'rgba(240,240,225,0.9)'; ctx.lineWidth = 0.9;
+    ctx.beginPath(); ctx.moveTo(6.5, -7); ctx.lineTo(1, 0); ctx.lineTo(6.5, 7); ctx.stroke();
+    ctx.strokeStyle = '#3a2f22'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(1, 0); ctx.lineTo(9.5, 0); ctx.stroke();
+    ctx.restore();
+  } else if (u.type === 'drum') {
+    /* 赤膊鼓手 */
+    ctx.fillStyle = SKIN;
+    ctx.beginPath(); ctx.moveTo(x - 6.5, y - 8); ctx.lineTo(x + 6.5, y - 8); ctx.lineTo(x + 5.5, y + 3); ctx.lineTo(x - 5.5, y + 3); ctx.closePath(); ctx.fill(); stroke();
+    ctx.strokeStyle = 'rgba(120,80,50,0.5)'; ctx.beginPath(); ctx.moveTo(x, y - 7); ctx.lineTo(x, y + 2); ctx.stroke();
+    ctx.fillStyle = gDark(); ctx.fillRect(x - 6, y + 2, 12, 5); /* 腰裙 */
+    legPair();
+    ctx.fillStyle = SKIN; ctx.beginPath(); ctx.arc(x, y - 12, 4.8, 0, 7); ctx.fill(); stroke(1.2); /* 光头 */
+    ctx.fillStyle = GOLD; ctx.fillRect(x - 4.8, y - 14.6, 9.6, 2.2);
+    ctx.fillStyle = 'rgba(10,14,20,0.85)'; ctx.fillRect(x - 3, y - 11.4, 6, 1.4);
+    /* 战鼓（腰前） */
+    const bt = Math.sin(t * 8);
+    const dg = ctx.createLinearGradient(x - 8, y + 1, x + 8, y + 10); dg.addColorStop(0, '#a87850'); dg.addColorStop(1, '#6a4a30');
+    ctx.fillStyle = dg; ctx.beginPath(); ctx.ellipse(x, y + 6, 8, 5.5, 0, 0, 7); ctx.fill(); stroke(1.3);
+    ctx.fillStyle = '#e8d8b0'; ctx.beginPath(); ctx.ellipse(x, y + 4.6, 8, 4.2, 0, 0, 7); ctx.fill(); stroke(1);
+    ctx.strokeStyle = '#c04a3a'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x - 7.4, y + 3); ctx.lineTo(x - 3, y + 8.6); ctx.moveTo(x + 7.4, y + 3); ctx.lineTo(x + 3, y + 8.6); ctx.stroke();
+    /* 鼓棒 */
+    ctx.strokeStyle = '#d8c090'; ctx.lineWidth = 1.7;
+    ctx.beginPath(); ctx.moveTo(x - 7.5, y - 5); ctx.lineTo(x - 3.5, y + 1.5 + bt * 2.4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 7.5, y - 5); ctx.lineTo(x + 3.5, y + 1.5 - bt * 2.4); ctx.stroke();
+    /* 背后金小旗 */
+    ctx.strokeStyle = '#5a4630'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(x + 7, y - 2); ctx.lineTo(x + 9.5, y - 20); ctx.stroke();
+    ctx.fillStyle = GOLD;
+    ctx.beginPath(); ctx.moveTo(x + 9.5, y - 20); ctx.quadraticCurveTo(x + 16, y - 18 + Math.sin(t * 5) * 1.2, x + 21, y - 17.5); ctx.lineTo(x + 16, y - 14) ; ctx.quadraticCurveTo(x + 12.5, y - 13.5, x + 9.8, y - 14.5); ctx.closePath(); ctx.fill(); stroke(0.9);
+    /* 光环范围微光 */
+    ctx.strokeStyle = 'rgba(220,190,110,' + (0.16 + 0.1 * bt) + ')';
+    ctx.beginPath(); ctx.arc(x, y, d.range * TILE * (0.5 + 0.1 * bt), 0, 7); ctx.stroke();
   }
   if (u.mastery) {
     ctx.strokeStyle = '#c9a4ff'; ctx.lineWidth = 2;
@@ -1014,85 +1215,240 @@ function drawEnemy(e) {
   /* 落影随光源偏右下；飞怪影更小更远 */
   if (d.fly) { ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(e.x + 5, e.y + e.r * 0.95, e.r * 0.55, e.r * 0.2, 0, 0, 7); ctx.fill(); }
   else { ctx.fillStyle = 'rgba(0,0,0,0.30)'; ctx.beginPath(); ctx.ellipse(e.x + 3, y + e.r * 0.9, e.r * 0.85, e.r * 0.32, 0, 0, 7); ctx.fill(); }
-  /* 蝙蝠：振翅 */
-  if (d.fly) {
-    const flap = Math.sin(game.t * 14 + e.x * 0.1);
-    ctx.fillStyle = shade(col === '#ffffff' ? '#d8c8e8' : col, 0.85);
+  /* —— 插画式怪物：描边 + 体积渐变 + 特征剪影（朝向=行进方向左） —— */
+  const r = e.r, ex = e.x;
+  const EOUT = (lw) => { ctx.strokeStyle = 'rgba(12,16,12,0.85)'; ctx.lineWidth = lw || 1.3; ctx.stroke(); };
+  const egG = (mult) => {
+    const g = ctx.createRadialGradient(ex - r * 0.4, y - r * 0.5, r * 0.22, ex, y, r * 1.25);
+    const base = col === '#ffffff' ? '#ffffff' : col;
+    g.addColorStop(0, shade(base, 1.42 * (mult || 1))); g.addColorStop(0.55, base); g.addColorStop(1, shade(base, 0.52 * (mult || 1)));
+    return g;
+  };
+  const t = game.t;
+  if (e.type === 'goblin') {
+    /* 绿皮突袭者：前倾小跑 + 短刀 + 大耳 */
+    ctx.fillStyle = '#5a4630';
+    ctx.beginPath(); ctx.roundRect(ex - r * 0.55, y - r * 0.15, r * 1.1, r * 0.9, 2.5); ctx.fill(); EOUT(1.1); /* 皮甲身 */
+    ctx.strokeStyle = 'rgba(12,16,12,0.8)'; ctx.lineWidth = 1.6; /* 跑动腿 */
+    const lp = Math.sin(t * 11 + ex * 0.2) * r * 0.3;
+    ctx.beginPath(); ctx.moveTo(ex - 2.5, y + r * 0.7); ctx.lineTo(ex - 4 - lp, y + r * 1.25); ctx.moveTo(ex + 2.5, y + r * 0.7); ctx.lineTo(ex + 4 + lp, y + r * 1.25); ctx.stroke();
+    ctx.fillStyle = egG(); /* 头 */
+    ctx.beginPath(); ctx.arc(ex - r * 0.18, y - r * 0.55, r * 0.62, 0, 7); ctx.fill(); EOUT(1.2);
+    ctx.fillStyle = shade(col === '#fff' ? col : col, 0.82); /* 大耳 */
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.6, y - r * 0.75); ctx.lineTo(ex - r * 1.35, y - r * 1.15); ctx.lineTo(ex - r * 0.62, y - r * 0.35); ctx.closePath(); ctx.fill(); EOUT(1);
+    ctx.beginPath(); ctx.moveTo(ex + r * 0.28, y - r * 0.8); ctx.lineTo(ex + r * 0.95, y - r * 1.2); ctx.lineTo(ex + r * 0.4, y - r * 0.4); ctx.closePath(); ctx.fill(); EOUT(1);
+    ctx.fillStyle = '#ffe27a'; /* 凶眼 */
+    ctx.beginPath(); ctx.arc(ex - r * 0.42, y - r * 0.6, 1.3, 0, 7); ctx.arc(ex - r * 0.02, y - r * 0.6, 1.3, 0, 7); ctx.fill();
+    ctx.save(); ctx.translate(ex + r * 0.75, y - r * 0.3); ctx.rotate(0.5); /* 右手短刀 */
+    ctx.fillStyle = '#c8d4e0'; ctx.beginPath(); ctx.moveTo(0, -r * 1.15); ctx.lineTo(1.6, -r * 0.85); ctx.lineTo(1.6, 0); ctx.lineTo(-1.6, 0); ctx.lineTo(-1.6, -r * 0.85); ctx.closePath(); ctx.fill(); EOUT(0.9);
+    ctx.fillStyle = '#7a5a3e'; ctx.fillRect(-1.8, 0, 3.6, r * 0.4); ctx.restore();
+  } else if (e.type === 'wolf') {
+    /* 奔狼：简洁剪影（椭身+梯形头+短腿） */
+    const lp = Math.sin(t * 13 + ex * 0.2) * 2.2;
+    ctx.fillStyle = egG(0.92);
+    ctx.beginPath(); ctx.ellipse(ex + r * 0.15, y - r * 0.1, r * 1.05, r * 0.62, -0.06, 0, 7); ctx.fill(); EOUT(1.4); /* 躯干 */
+    ctx.beginPath(); ctx.ellipse(ex - r * 0.95, y - r * 0.45, r * 0.5, r * 0.42, 0, 0, 7); ctx.fill(); EOUT(1.3);    /* 头 */
+    ctx.beginPath(); ctx.moveTo(ex - r * 1.35, y - r * 0.35); ctx.lineTo(ex - r * 1.75, y - r * 0.15); ctx.lineTo(ex - r * 1.3, y - r * 0.02); ctx.closePath(); ctx.fill(); EOUT(1); /* 吻 */
+    ctx.beginPath(); ctx.moveTo(ex + r * 1.05, y - r * 0.5); ctx.quadraticCurveTo(ex + r * 1.75, y - r * 0.95 - Math.sin(t * 8) * 2, ex + r * 1.6, y - r * 1.45); ctx.quadraticCurveTo(ex + r * 1.2, y - r * 0.9, ex + r * 0.95, y - r * 0.75); ctx.closePath(); ctx.fill(); EOUT(1); /* 尾 */
+    ctx.fillStyle = shade(col === '#fff' ? col : col, 0.78); /* 耳 */
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.85, y - r * 0.78); ctx.lineTo(ex - r * 0.75, y - r * 1.35); ctx.lineTo(ex - r * 0.42, y - r * 0.82); ctx.closePath(); ctx.fill(); EOUT(0.9);
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.48, y - r * 0.82); ctx.lineTo(ex - r * 0.28, y - r * 1.35); ctx.lineTo(ex - r * 0.1, y - r * 0.78); ctx.closePath(); ctx.fill(); EOUT(0.9);
+    ctx.strokeStyle = 'rgba(24,30,28,0.95)'; ctx.lineWidth = 2; /* 腿 */
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.5, y + r * 0.4); ctx.lineTo(ex - r * 0.62 - lp, y + r * 1.1); ctx.moveTo(ex + r * 0.6, y + r * 0.4); ctx.lineTo(ex + r * 0.72 + lp, y + r * 1.1); ctx.stroke();
+    ctx.fillStyle = '#ff8a5a'; ctx.beginPath(); ctx.arc(ex - r * 1.02, y - r * 0.52, 1.4, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(245,245,235,0.9)'; /* 獠牙（小） */
+    ctx.beginPath(); ctx.moveTo(ex - r * 1.42, y - r * 0.12); ctx.lineTo(ex - r * 1.36, y + r * 0.12); ctx.lineTo(ex - r * 1.28, y - r * 0.12); ctx.closePath(); ctx.fill();
+  } else if (e.type === 'orc') {
+    /* 重甲兽人： Mohawk + 骨棒 + 獠牙 */
+    ctx.fillStyle = egG(); /* 巨躯 */
+    ctx.beginPath();
+    ctx.moveTo(ex - r * 0.85, y + r); ctx.lineTo(ex - r * 1.02, y - r * 0.15); ctx.quadraticCurveTo(ex - r * 1.1, y - r * 0.7, ex - r * 0.55, y - r * 0.78);
+    ctx.lineTo(ex + r * 0.55, y - r * 0.78); ctx.quadraticCurveTo(ex + r * 1.1, y - r * 0.7, ex + r * 1.02, y - r * 0.15); ctx.lineTo(ex + r * 0.85, y + r);
+    ctx.closePath(); ctx.fill(); EOUT();
+    ctx.fillStyle = '#6a5a44'; /* 肩骨甲 */
+    ctx.beginPath(); ctx.ellipse(ex - r * 0.72, y - r * 0.55, r * 0.42, r * 0.28, -0.5, 0, 7); ctx.fill(); EOUT(1);
+    ctx.fillStyle = '#7a4a3a'; /* 皮腰带 */
+    ctx.fillRect(ex - r * 0.8, y + r * 0.3, r * 1.6, r * 0.28);
+    ctx.fillStyle = shade(col === '#fff' ? col : col, 1.28); /* 头冠莫霍克 */
+    ctx.beginPath();
+    ctx.moveTo(ex - r * 0.3, y - r * 0.78);
+    for (let i2 = 0; i2 < 4; i2++) { ctx.lineTo(ex - r * 0.2 + i2 * r * 0.16, y - r * (1.35 - i2 * 0.06)); ctx.lineTo(ex - r * 0.12 + i2 * r * 0.16, y - r * 0.8); }
+    ctx.closePath(); ctx.fill(); EOUT(0.9);
+    ctx.fillStyle = '#ff5a4a'; ctx.beginPath(); ctx.arc(ex - r * 0.34, y - r * 0.34, 1.5, 0, 7); ctx.arc(ex + r * 0.12, y - r * 0.34, 1.5, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(242,240,225,0.95)'; /* 獠牙（小） */
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.36, y + r * 0.08); ctx.lineTo(ex - r * 0.31, y - r * 0.08); ctx.lineTo(ex - r * 0.25, y + r * 0.08); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(ex + r * 0.08, y + r * 0.08); ctx.lineTo(ex + r * 0.14, y - r * 0.08); ctx.lineTo(ex + r * 0.2, y + r * 0.08); ctx.closePath(); ctx.fill();
+    ctx.save(); ctx.translate(ex + r * 0.95, y - r * 0.35); ctx.rotate(-0.45); /* 骨棒 */
+    ctx.fillStyle = '#cfc4a8'; ctx.beginPath(); ctx.roundRect(-1.6, -r * 1.25, 3.2, r * 1.5, 1.6); ctx.fill(); EOUT(1);
+    ctx.beginPath(); ctx.ellipse(0, -r * 1.22, 2.6, 2, 0, 0, 7); ctx.fill(); EOUT(1); ctx.restore();
+  } else if (d.fly) {
+    /* 蝙蝠：渐变膜翼 + 骨指 + 红眼 */
+    const flap = Math.sin(t * 14 + ex * 0.1);
     for (const sgn of [-1, 1]) {
-      ctx.beginPath(); ctx.moveTo(e.x + sgn * e.r * 0.5, y);
-      ctx.quadraticCurveTo(e.x + sgn * e.r * 2.3, y - 6 - flap * 7, e.x + sgn * e.r * 1.7, y + 4 - flap * 3);
-      ctx.quadraticCurveTo(e.x + sgn * e.r * 1.1, y + 3, e.x + sgn * e.r * 0.5, y + 2);
+      const wg = ctx.createLinearGradient(ex, y, ex + sgn * r * 2.2, y - 6);
+      wg.addColorStop(0, shade(col === '#fff' ? '#d8c8e8' : col, 0.95)); wg.addColorStop(1, shade(col === '#fff' ? '#d8c8e8' : col, 0.55));
+      ctx.fillStyle = wg;
+      ctx.beginPath(); ctx.moveTo(ex + sgn * r * 0.45, y - r * 0.2);
+      ctx.quadraticCurveTo(ex + sgn * r * 2.3, y - 7 - flap * 7, ex + sgn * r * 1.75, y + 4 - flap * 3);
+      ctx.quadraticCurveTo(ex + sgn * r * 1.3, y + 2.5, ex + sgn * r * 1.15, y + 5.5 - flap * 2);
+      ctx.quadraticCurveTo(ex + sgn * r * 0.95, y + 2, ex + sgn * r * 0.7, y + 4.5 - flap * 1.5);
+      ctx.quadraticCurveTo(ex + sgn * r * 0.6, y + 1.5, ex + sgn * r * 0.45, y + 2);
+      ctx.closePath(); ctx.fill(); EOUT(1);
+    }
+    ctx.fillStyle = egG();
+    ctx.beginPath(); ctx.arc(ex, y, r * 0.72, 0, 7); ctx.fill(); EOUT(1.2);
+    ctx.fillStyle = shade(col === '#fff' ? col : col, 0.75); /* 尖耳 */
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.5, y - r * 0.45); ctx.lineTo(ex - r * 0.32, y - r * 1.15); ctx.lineTo(ex - r * 0.05, y - r * 0.55); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(ex + r * 0.5, y - r * 0.45); ctx.lineTo(ex + r * 0.32, y - r * 1.15); ctx.lineTo(ex + r * 0.05, y - r * 0.55); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ff4a3a'; ctx.beginPath(); ctx.arc(ex - r * 0.22, y - r * 0.12, 1.15, 0, 7); ctx.arc(ex + r * 0.22, y - r * 0.12, 1.15, 0, 7); ctx.fill();
+  } else if (e.type === 'shaman') {
+    /* 灰袍术士：兜帽 + 弯杖死灵珠 */
+    const rg = ctx.createLinearGradient(ex - r, y - r * 1.3, ex + r, y + r);
+    rg.addColorStop(0, shade(col === '#fff' ? col : col, 1.32)); rg.addColorStop(1, shade(col === '#fff' ? col : col, 0.58));
+    ctx.fillStyle = rg;
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.4, y - r * 0.55); ctx.lineTo(ex + r * 0.4, y - r * 0.55);
+    ctx.quadraticCurveTo(ex + r * 0.95, y + r * 0.4, ex + r * 0.82, y + r * 1.05);
+    ctx.quadraticCurveTo(ex + r * 0.4, y + r * 0.82, ex, y + r * 1.05);
+    ctx.quadraticCurveTo(ex - r * 0.4, y + r * 0.82, ex - r * 0.82, y + r * 1.05);
+    ctx.quadraticCurveTo(ex - r * 0.95, y + r * 0.4, ex - r * 0.4, y - r * 0.55); ctx.closePath(); ctx.fill(); EOUT(1.2);
+    ctx.fillStyle = shade(col === '#fff' ? col : col, 1.18); /* 兜帽 */
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.62, y - r * 0.5); ctx.quadraticCurveTo(ex - r * 0.68, y - r * 1.35, ex + r * 0.1, y - r * 1.42); ctx.quadraticCurveTo(ex + r * 0.68, y - r * 1.25, ex + r * 0.62, y - r * 0.5);
+    ctx.quadraticCurveTo(ex, y - r * 0.28, ex - r * 0.62, y - r * 0.5); ctx.closePath(); ctx.fill(); EOUT(1.1);
+    ctx.fillStyle = 'rgba(8,10,16,0.9)';
+    ctx.beginPath(); ctx.ellipse(ex, y - r * 0.62, r * 0.4, r * 0.3, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#c89aff';
+    ctx.beginPath(); ctx.arc(ex - r * 0.15, y - r * 0.66, 1.2, 0, 7); ctx.arc(ex + r * 0.16, y - r * 0.66, 1.2, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#8a6a4a'; ctx.lineWidth = 1.7; /* 弯杖 */
+    ctx.beginPath(); ctx.moveTo(ex + r * 0.85, y + r * 1.05); ctx.quadraticCurveTo(ex + r * 0.6, y - r * 0.4, ex + r * 0.95, y - r * 1.3); ctx.stroke();
+    const og = ctx.createRadialGradient(ex + r, y - r * 1.5, 0.4, ex + r, y - r * 1.5, r * 0.55);
+    og.addColorStop(0, '#fff'); og.addColorStop(0.4, '#c89aff'); og.addColorStop(1, 'rgba(200,130,255,0)');
+    ctx.fillStyle = og; ctx.beginPath(); ctx.arc(ex + r, y - r * 1.5, r * 0.55 + Math.sin(t * 4 + ex) * 1, 0, 7); ctx.fill();
+  } else if (e.type === 'golem') {
+    /* 岩巨：叠石 + 熔芯 + 苔痕 */
+    const rc = col === '#fff' ? '#fff' : col;
+    ctx.fillStyle = shade(rc, 0.8); /* 腿 */
+    ctx.beginPath(); ctx.roundRect(ex - r * 0.7, y + r * 0.3, r * 0.52, r * 0.75, 3); ctx.fill(); EOUT(1.2);
+    ctx.beginPath(); ctx.roundRect(ex + r * 0.18, y + r * 0.3, r * 0.52, r * 0.75, 3); ctx.fill(); EOUT(1.2);
+    ctx.fillStyle = egG(); /* 躯干巨岩 */
+    ctx.beginPath();
+    ctx.moveTo(ex - r * 0.82, y + r * 0.45); ctx.lineTo(ex - r * 0.95, y - r * 0.3); ctx.lineTo(ex - r * 0.5, y - r * 0.72);
+    ctx.lineTo(ex + r * 0.55, y - r * 0.7); ctx.lineTo(ex + r * 0.98, y - r * 0.18); ctx.lineTo(ex + r * 0.8, y + r * 0.5);
+    ctx.closePath(); ctx.fill(); EOUT(1.5);
+    ctx.fillStyle = shade(rc, 1.18); /* 拳臂 */
+    ctx.beginPath(); ctx.roundRect(ex - r * 1.28, y - r * 0.35, r * 0.5, r * 0.85, 5); ctx.fill(); EOUT(1.2);
+    ctx.beginPath(); ctx.roundRect(ex + r * 0.78, y - r * 0.42, r * 0.5, r * 0.85, 5); ctx.fill(); EOUT(1.2);
+    ctx.fillStyle = shade(rc, 1.05); /* 方头 */
+    ctx.beginPath(); ctx.roundRect(ex - r * 0.42, y - r * 1.22, r * 0.84, r * 0.56, 4); ctx.fill(); EOUT(1.3);
+    const pulse = 0.65 + 0.3 * Math.sin(t * 3 + ex);
+    ctx.strokeStyle = 'rgba(255,140,55,' + pulse + ')'; ctx.lineWidth = 1.6; /* 熔芯裂纹 */
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.5, y - r * 0.5); ctx.lineTo(ex - r * 0.15, y - r * 0.05); ctx.lineTo(ex - r * 0.3, y + r * 0.32);
+    ctx.moveTo(ex + r * 0.2, y - r * 0.55); ctx.lineTo(ex + r * 0.38, y + r * 0.05); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,170,80,' + (0.75 + 0.2 * Math.sin(t * 3 + ex)) + ')'; /* 核心+眼 */
+    ctx.beginPath(); ctx.arc(ex - r * 0.08, y - r * 0.08, 2.6, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(ex - r * 0.2, y - r * 0.95, 1.6, 0, 7); ctx.arc(ex + r * 0.14, y - r * 0.95, 1.6, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(90,140,70,0.5)'; /* 苔痕 */
+    ctx.beginPath(); ctx.ellipse(ex - r * 0.45, y - r * 0.6, 3.4, 1.6, 0.4, 0, 7); ctx.ellipse(ex + r * 0.5, y + r * 0.25, 2.8, 1.4, -0.3, 0, 7); ctx.fill();
+  } else if (e.type === 'sapper') {
+    /* 爆破工程兵：护目镜 + 炸弹背包 + 点燃引信 */
+    ctx.fillStyle = egG();
+    ctx.beginPath(); ctx.roundRect(ex - r * 0.62, y - r * 0.5, r * 1.24, r * 1.35, 3.5); ctx.fill(); EOUT(1.2); /* 工装 */
+    ctx.fillStyle = 'rgba(30,24,16,0.55)'; ctx.fillRect(ex - r * 0.62, y + r * 0.05, r * 1.24, r * 0.22); /* 背带 */
+    ctx.fillStyle = shade(col === '#fff' ? col : col, 1.3); /* 头盔 */
+    ctx.beginPath(); ctx.arc(ex, y - r * 0.72, r * 0.52, Math.PI, 0); ctx.lineTo(ex + r * 0.52, y - r * 0.62); ctx.lineTo(ex - r * 0.52, y - r * 0.62); ctx.closePath(); ctx.fill(); EOUT(1.1);
+    ctx.fillStyle = '#7ad0c8'; /* 护目镜片 */
+    ctx.beginPath(); ctx.arc(ex - r * 0.22, y - r * 0.62, r * 0.2, 0, 7); ctx.arc(ex + r * 0.22, y - r * 0.62, r * 0.2, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(12,16,12,0.85)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#2c241e'; /* 炸弹背包 */
+    ctx.beginPath(); ctx.arc(ex + r * 0.78, y - r * 0.25, r * 0.42, 0, 7); ctx.fill(); EOUT(1.1);
+    const blip = 0.55 + 0.45 * Math.sin(t * 18 + ex);
+    ctx.strokeStyle = 'rgba(70,50,30,0.95)'; ctx.lineWidth = 1.5; /* 引信 */
+    ctx.beginPath(); ctx.moveTo(ex + r * 0.85, y - r * 0.65); ctx.quadraticCurveTo(ex + r * 1.25, y - r * 1.1, ex + r * 0.95, y - r * 1.35); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,215,90,' + blip + ')';
+    ctx.beginPath(); ctx.arc(ex + r * 0.95, y - r * 1.4, 2.2 + blip, 0, 7); ctx.fill();
+    if (e.boomT > 0) { const bl = e.boomT; ctx.strokeStyle = 'rgba(255,120,50,' + (0.4 + bl * 0.6) + ')'; ctx.lineWidth = 1 + bl * 2; ctx.beginPath(); ctx.arc(ex, y, r + 3 + bl * 4, 0, 7); ctx.stroke(); }
+  } else if (e.type === 'drumer') {
+    /* 兽鼓手：战纹 + 横挎大鼓 */
+    const beat = Math.sin(t * 7 + ex * 0.2);
+    ctx.fillStyle = egG();
+    ctx.beginPath(); ctx.arc(ex, y - r * 0.35, r * 0.72, 0, 7); ctx.fill(); EOUT(1.2); /* 身 */
+    ctx.fillStyle = shade(col === '#fff' ? col : col, 1.15); /* 兽耳 */
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.6, y - r * 0.72); ctx.lineTo(ex - r * 0.78, y - r * 1.32); ctx.lineTo(ex - r * 0.18, y - r * 0.95); ctx.closePath(); ctx.fill(); EOUT(1);
+    ctx.beginPath(); ctx.moveTo(ex + r * 0.6, y - r * 0.72); ctx.lineTo(ex + r * 0.78, y - r * 1.32); ctx.lineTo(ex + r * 0.18, y - r * 0.95); ctx.closePath(); ctx.fill(); EOUT(1);
+    ctx.strokeStyle = '#b0453a'; ctx.lineWidth = 1.6; /* 战纹 */
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.45, y - r * 0.5); ctx.lineTo(ex - r * 0.2, y - r * 0.32); ctx.moveTo(ex + r * 0.45, y - r * 0.5); ctx.lineTo(ex + r * 0.2, y - r * 0.32); ctx.stroke();
+    ctx.fillStyle = '#ffe27a'; ctx.beginPath(); ctx.arc(ex - r * 0.24, y - r * 0.45, 1.2, 0, 7); ctx.arc(ex + r * 0.24, y - r * 0.45, 1.2, 0, 7); ctx.fill();
+    const dg = ctx.createLinearGradient(ex - r * 0.9, y + r * 0.2, ex + r * 0.9, y + r);
+    dg.addColorStop(0, '#a87850'); dg.addColorStop(1, '#5f4228');
+    ctx.fillStyle = dg; /* 大鼓 */
+    ctx.beginPath(); ctx.ellipse(ex, y + r * 0.55, r * 0.88, r * 0.55, 0, 0, 7); ctx.fill(); EOUT(1.3);
+    ctx.fillStyle = '#e2d2a8'; ctx.beginPath(); ctx.ellipse(ex, y + r * 0.4, r * 0.88, r * 0.42, 0, 0, 7); ctx.fill(); EOUT(1);
+    ctx.strokeStyle = 'rgba(30,22,14,0.6)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.8, y + r * 0.32); ctx.lineTo(ex + r * 0.8, y + r * 0.6); ctx.moveTo(ex + r * 0.8, y + r * 0.32); ctx.lineTo(ex - r * 0.8, y + r * 0.6); ctx.stroke();
+    ctx.strokeStyle = '#d8c090'; ctx.lineWidth = 1.7; /* 鼓棒 */
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.75, y - r * 0.4); ctx.lineTo(ex - r * 0.3, y + r * 0.05 + beat * 2.4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ex + r * 0.75, y - r * 0.4); ctx.lineTo(ex + r * 0.3, y + r * 0.05 - beat * 2.4); ctx.stroke();
+    ctx.strokeStyle = 'rgba(220,180,110,' + (0.3 + 0.14 * beat) + ')'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(ex, y, r + 7 + beat * 3, 0, 7); ctx.stroke();
+  } else if (e.type === 'wraith') {
+    /* 怨魂：多层雾袍 + 空洞眼 + 游丝 */
+    const wave = Math.sin(t * 2.4 + ex * 0.1);
+    for (let L = 2; L >= 1; L--) {
+      ctx.globalAlpha = L === 2 ? 0.24 : 0.72;
+      const off = L === 2 ? 2.5 : 0;
+      ctx.fillStyle = col === '#fff' ? '#fff' : shade(col, L === 2 ? 1.3 : 1);
+      ctx.beginPath(); ctx.arc(ex + off, y - r * 0.3 - off, r * (0.88 - L * 0.1), Math.PI, 0);
+      ctx.moveTo(ex - r * 0.88 + off, y - r * 0.3 - off);
+      ctx.quadraticCurveTo(ex - r * 0.9 + off, y + r * 0.5, ex - r * 0.6 + off + wave * 2, y + r * 1.1);
+      ctx.quadraticCurveTo(ex - r * 0.2 + off, y + r * 0.7, ex + off, y + r * 1.18);
+      ctx.quadraticCurveTo(ex + r * 0.3 + off, y + r * 0.72, ex + r * 0.55 + off - wave * 2, y + r * 1.05);
+      ctx.quadraticCurveTo(ex + r * 0.85 + off, y + r * 0.45, ex + r * 0.88 + off, y - r * 0.3 - off);
       ctx.closePath(); ctx.fill();
     }
-  }
-  /* 体积球：左上受光高光 + 底部环境色 */
-  const eg = ctx.createRadialGradient(e.x - e.r * 0.38, y - e.r * 0.42, e.r * 0.25, e.x, y, e.r * 1.25);
-  eg.addColorStop(0, shade(col === '#ffffff' ? '#ffffff' : col, 1.38)); eg.addColorStop(0.55, col); eg.addColorStop(1, shade(col === '#ffffff' ? '#ffffff' : col, 0.55));
-  ctx.fillStyle = eg;
-  if (e.type === 'golem') {
-    ctx.beginPath();
-    ctx.moveTo(e.x - e.r, y - e.r * 0.4); ctx.lineTo(e.x - e.r * 0.6, y - e.r); ctx.lineTo(e.x + e.r * 0.5, y - e.r * 0.95);
-    ctx.lineTo(e.x + e.r, y - e.r * 0.2); ctx.lineTo(e.x + e.r * 0.85, y + e.r); ctx.lineTo(e.x - e.r * 0.85, y + e.r);
-    ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(e.x - e.r * 0.4, y - e.r * 0.6); ctx.lineTo(e.x - e.r * 0.1, y + e.r * 0.2); ctx.lineTo(e.x - e.r * 0.5, y + e.r * 0.7); ctx.stroke();
-    ctx.fillStyle = 'rgba(255,150,70,0.85)'; ctx.fillRect(e.x - 4, y - e.r * 0.35, 3, 3); ctx.fillRect(e.x + 2, y - e.r * 0.35, 3, 3);
-  } else if (e.type === 'wolf') {
-    ctx.beginPath(); ctx.ellipse(e.x, y, e.r * 1.25, e.r * 0.78, 0, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(e.x - e.r * 1.1, y - e.r * 0.45); ctx.lineTo(e.x - e.r * 0.55, y - e.r * 1.15); ctx.lineTo(e.x - e.r * 0.3, y - e.r * 0.5); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(e.x - e.r * 0.55, y - e.r * 0.5); ctx.lineTo(e.x - e.r * 0.1, y - e.r * 1.1); ctx.lineTo(e.x + e.r * 0.1, y - e.r * 0.45); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = 'rgba(255,220,120,0.9)'; ctx.beginPath(); ctx.arc(e.x - e.r * 0.65, y - e.r * 0.1, 1.6, 0, 7); ctx.fill();
-  } else if (e.type === 'orc') {
-    ctx.beginPath();
-    ctx.moveTo(e.x - e.r * 0.75, y + e.r); ctx.lineTo(e.x - e.r, y - e.r * 0.3); ctx.lineTo(e.x - e.r * 0.45, y - e.r);
-    ctx.lineTo(e.x + e.r * 0.45, y - e.r); ctx.lineTo(e.x + e.r, y - e.r * 0.3); ctx.lineTo(e.x + e.r * 0.75, y + e.r);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = 'rgba(240,240,220,0.9)';
-    ctx.beginPath(); ctx.moveTo(e.x - e.r * 0.35, y + e.r * 0.25); ctx.lineTo(e.x - e.r * 0.2, y + e.r * 0.65); ctx.lineTo(e.x - e.r * 0.1, y + e.r * 0.25); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(e.x + e.r * 0.1, y + e.r * 0.25); ctx.lineTo(e.x + e.r * 0.2, y + e.r * 0.65); ctx.lineTo(e.x + e.r * 0.35, y + e.r * 0.25); ctx.closePath(); ctx.fill();
-  } else if (e.type === 'shaman') {
-    ctx.beginPath(); ctx.arc(e.x, y, e.r, 0, 7); ctx.fill();
-    ctx.fillStyle = shade(col, 0.8);
-    ctx.beginPath(); ctx.moveTo(e.x - e.r * 0.9, y - e.r * 0.15); ctx.lineTo(e.x, y - e.r * 1.7); ctx.lineTo(e.x + e.r * 0.9, y - e.r * 0.15); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = 'rgba(200,130,255,0.9)'; ctx.beginPath(); ctx.arc(e.x, y - e.r * 1.55, 2.2, 0, 7); ctx.fill();
-  } else if (e.type === 'sapper') {
-    ctx.beginPath(); ctx.arc(e.x, y, e.r, 0, 7); ctx.fill();
-    ctx.strokeStyle = 'rgba(60,40,20,0.9)'; ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.moveTo(e.x + e.r * 0.3, y - e.r * 0.9); ctx.quadraticCurveTo(e.x + e.r, y - e.r * 1.5, e.x + e.r * 0.4, y - e.r * 1.8); ctx.stroke();
-    const spark = 0.6 + 0.4 * Math.sin(game.t * 22 + e.x);
-    ctx.fillStyle = 'rgba(255,220,90,' + spark + ')'; ctx.beginPath(); ctx.arc(e.x + e.r * 0.4, y - e.r * 1.85, 2.4 + spark, 0, 7); ctx.fill();
-    if (e.boomT > 0) { const bl = e.boomT; ctx.strokeStyle = 'rgba(255,120,50,' + (0.4 + bl * 0.6) + ')'; ctx.lineWidth = 1 + bl * 2; ctx.beginPath(); ctx.arc(e.x, y, e.r + 3 + bl * 4, 0, 7); ctx.stroke(); }
-  } else if (e.type === 'drumer') {
-    ctx.beginPath(); ctx.arc(e.x, y, e.r, 0, 7); ctx.fill();
-    ctx.fillStyle = shade(col, 0.7);
-    ctx.beginPath(); ctx.ellipse(e.x, y + e.r * 0.45, e.r * 0.85, e.r * 0.5, 0, 0, 7); ctx.fill();
-    ctx.strokeStyle = 'rgba(240,220,180,0.6)'; ctx.lineWidth = 1.5;
-    const beat = Math.sin(game.t * 7 + e.x * 0.2);
-    ctx.beginPath(); ctx.moveTo(e.x - e.r * 0.7, y - e.r * 0.7); ctx.lineTo(e.x - e.r * 0.2, y - e.r * 0.1 + beat * 2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(e.x + e.r * 0.7, y - e.r * 0.7); ctx.lineTo(e.x + e.r * 0.2, y - e.r * 0.1 - beat * 2); ctx.stroke();
-    ctx.strokeStyle = 'rgba(220,180,110,0.35)';
-    ctx.beginPath(); ctx.arc(e.x, y, e.r + 5 + beat * 3, 0, 7); ctx.stroke();
-  } else if (e.type === 'wraith') {
-    ctx.globalAlpha = 0.75;
-    ctx.beginPath(); ctx.arc(e.x, y - e.r * 0.15, e.r * 0.9, Math.PI, 0); ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(e.x - e.r * 0.9, y - e.r * 0.1);
-    for (let i2 = 0; i2 <= 4; i2++) { const wx2 = e.x - e.r * 0.9 + e.r * 0.45 * i2; ctx.quadraticCurveTo(wx2 + e.r * 0.12, y + e.r * (i2 % 2 ? 1.1 : 0.6), wx2 + e.r * 0.225, y + e.r * 0.85); }
-    ctx.lineTo(e.x + e.r * 0.9, y - e.r * 0.1); ctx.closePath(); ctx.fill();
     ctx.globalAlpha = 1;
-    ctx.fillStyle = 'rgba(240,255,255,0.95)'; ctx.beginPath(); ctx.arc(e.x - e.r * 0.3, y - e.r * 0.3, 1.8, 0, 7); ctx.arc(e.x + e.r * 0.28, y - e.r * 0.3, 1.8, 0, 7); ctx.fill();
-  } else {
-    ctx.beginPath(); ctx.arc(e.x, y, e.r, 0, 7); ctx.fill();
-    if (e.type === 'goblin') {
-      ctx.fillStyle = shade(col, 0.8);
-      ctx.beginPath(); ctx.moveTo(e.x - e.r * 0.7, y - e.r * 0.5); ctx.lineTo(e.x - e.r * 1.25, y - e.r * 1.05); ctx.lineTo(e.x - e.r * 0.25, y - e.r * 0.85); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(e.x + e.r * 0.7, y - e.r * 0.5); ctx.lineTo(e.x + e.r * 1.25, y - e.r * 1.05); ctx.lineTo(e.x + e.r * 0.25, y - e.r * 0.85); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(6,14,20,0.9)';
+    ctx.beginPath(); ctx.ellipse(ex, y - r * 0.38, r * 0.52, r * 0.42, 0, 0, 7); ctx.fill(); /* 兜帽阴影 */
+    ctx.fillStyle = '#8fe8ff';
+    ctx.beginPath(); ctx.arc(ex - r * 0.2, y - r * 0.42, 1.7, 0, 7); ctx.arc(ex + r * 0.22, y - r * 0.42, 1.7, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(160,220,240,0.35)'; ctx.lineWidth = 1; /* 游丝 */
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.7, y + r * 0.2); ctx.quadraticCurveTo(ex - r * 1.3, y + wave * 3, ex - r * 1.15, y + r * 0.9);
+    ctx.moveTo(ex + r * 0.7, y + r * 0.15); ctx.quadraticCurveTo(ex + r * 1.3, y - wave * 3, ex + r * 1.15, y + r * 0.8); ctx.stroke();
+  } else if (e.def.boss) {
+    /* 深渊督军：角盔巨甲 + 巨剑 + 披风 */
+    const rc = col === '#fff' ? '#fff' : col;
+    ctx.fillStyle = shade(rc, 0.62); /* 披风 */
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.6, y - r * 0.7);
+    ctx.quadraticCurveTo(ex - r * 1.6, y + Math.sin(t * 2) * 2, ex - r * 1.35, y + r * 1.15);
+    ctx.lineTo(ex + r * 1.35, y + r * 1.15);
+    ctx.quadraticCurveTo(ex + r * 1.6, y - Math.sin(t * 2) * 2, ex + r * 0.6, y - r * 0.7);
+    ctx.closePath(); ctx.fill(); EOUT(1.4);
+    ctx.fillStyle = egG(); /* 躯甲 */
+    ctx.beginPath();
+    ctx.moveTo(ex - r * 0.72, y + r); ctx.lineTo(ex - r * 0.9, y - r * 0.2); ctx.quadraticCurveTo(ex - r * 0.95, y - r * 0.75, ex - r * 0.4, y - r * 0.82);
+    ctx.lineTo(ex + r * 0.4, y - r * 0.82); ctx.quadraticCurveTo(ex + r * 0.95, y - r * 0.75, ex + r * 0.9, y - r * 0.2); ctx.lineTo(ex + r * 0.72, y + r);
+    ctx.closePath(); ctx.fill(); EOUT(1.6);
+    ctx.fillStyle = shade(rc, 1.35); /* 大肩甲 */
+    for (const s of [-1, 1]) {
+      const pg = ctx.createRadialGradient(ex + s * r * 0.72 - 2, y - r * 0.62 - 2, 1, ex + s * r * 0.72, y - r * 0.6, r * 0.42);
+      pg.addColorStop(0, shade(rc, 1.55)); pg.addColorStop(1, shade(rc, 0.85));
+      ctx.fillStyle = pg;
+      ctx.beginPath(); ctx.arc(ex + s * r * 0.72, y - r * 0.58, r * 0.38, Math.PI, 0); ctx.closePath(); ctx.fill(); EOUT(1.3);
     }
-  }
-  /* 统一高光点 + 受光描边 */
-  if (e.hpFlash <= 0) {
-    ctx.fillStyle = 'rgba(255,255,255,0.22)';
-    ctx.beginPath(); ctx.ellipse(e.x - e.r * 0.35, y - e.r * 0.45, e.r * 0.28, e.r * 0.16, -0.6, 0, 7); ctx.fill();
+    ctx.fillStyle = shade(rc, 0.9); /* 头 + 角盔 */
+    ctx.beginPath(); ctx.arc(ex, y - r * 0.95, r * 0.4, 0, 7); ctx.fill(); EOUT(1.3);
+    ctx.strokeStyle = '#e0d8c8'; ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.moveTo(ex - r * 0.3, y - r * 1.15); ctx.quadraticCurveTo(ex - r * 0.62, y - r * 1.55, ex - r * 0.38, y - r * 1.75); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ex + r * 0.3, y - r * 1.15); ctx.quadraticCurveTo(ex + r * 0.62, y - r * 1.55, ex + r * 0.38, y - r * 1.75); ctx.stroke();
+    ctx.fillStyle = '#ff5a3a'; ctx.beginPath(); ctx.arc(ex - r * 0.14, y - r * 0.95, 1.8, 0, 7); ctx.arc(ex + r * 0.14, y - r * 0.95, 1.8, 0, 7); ctx.fill();
+    ctx.fillStyle = GOLD; /* 胸徽 */
+    ctx.beginPath(); ctx.moveTo(ex, y - r * 0.5); ctx.lineTo(ex + r * 0.2, y - r * 0.22); ctx.lineTo(ex, y + r * 0.06); ctx.lineTo(ex - r * 0.2, y - r * 0.22); ctx.closePath(); ctx.fill();
+    ctx.save(); ctx.translate(ex + r * 0.95, y - r * 0.1); ctx.rotate(0.16); /* 巨剑 */
+    const bgd = ctx.createLinearGradient(-2.6, 0, 2.6, 0); bgd.addColorStop(0, '#3a3040'); bgd.addColorStop(0.5, '#8a7a95'); bgd.addColorStop(1, '#2c2430');
+    ctx.fillStyle = bgd;
+    ctx.beginPath(); ctx.moveTo(0, -r * 2.05); ctx.lineTo(3.4, -r * 1.7); ctx.lineTo(3.4, r * 0.6); ctx.lineTo(-3.4, r * 0.6); ctx.lineTo(-3.4, -r * 1.7); ctx.closePath(); ctx.fill(); EOUT(1.4);
+    ctx.fillStyle = GOLD; ctx.fillRect(-6, r * 0.6, 12, 3); ctx.fillRect(-1.7, r * 0.9, 3.4, r * 0.5); ctx.restore();
+  } else {
+    ctx.fillStyle = egG();
+    ctx.beginPath(); ctx.arc(ex, y, r, 0, 7); ctx.fill(); EOUT(1.2);
   }
   if (e.def.boss) {
     const bg3 = ctx.createRadialGradient(e.x, y, e.r * 0.6, e.x, y, e.r * 2.3);
