@@ -473,8 +473,10 @@ class Unit {
     } else if (this.type !== 'drum') {
       fxLine(this.x + ux * 10, this.y - 5 + uy * 10, this.x + ux * 20, this.y - 5 + uy * 20, 'rgba(255,255,240,0.65)');
     }
-    const fly = this.type === 'cannon' ? 470 : this.type === 'mage' ? 620 : this.type === 'xbow' ? 1000 : 880;
-    game.shots.push({ x: this.x + ux * 8, y: this.y - 6 + uy * 6, tx: best.x, ty: best.y, t: 0, life: Math.max(0.08, dist / fly), arc: this.type === 'cannon' ? Math.min(44, dist * 0.2) : 0, kind: this.type, color: this.type === 'mage' ? '#b08aff' : this.type === 'cannon' ? '#ffb060' : '#ffe8a0', big: this.type === 'cannon' });
+    if (!d.block) {
+      const fly = this.type === 'cannon' ? 470 : this.type === 'mage' ? 620 : this.type === 'xbow' ? 1000 : 880;
+      game.shots.push({ x: this.x + ux * 8, y: this.y - 6 + uy * 6, tx: best.x, ty: best.y, t: 0, life: Math.max(0.08, dist / fly), arc: this.type === 'cannon' ? Math.min(44, dist * 0.2) : 0, kind: this.type, color: this.type === 'mage' ? '#b08aff' : this.type === 'cannon' ? '#ffb060' : '#ffe8a0', big: this.type === 'cannon' });
+    }
     SFX.hit();
     hitUnit(this, best, dmg);
     if (d.pierce) {
@@ -1098,11 +1100,18 @@ function drawUnit(u) {
     legPair(); torso(7.5, 5.8, 13); pauldrons(4);
     ctx.fillStyle = SKIN; ctx.fillRect(x - 3.4, y - 10.5, 6.8, 3); /* 颈 */
     helm('v');
-    /* 顶天剑：右手侧上举 */
-    ctx.save(); ctx.translate(x + 11, y - 6); ctx.rotate(-0.32);
+    /* 顶天剑：以肩为轴，出手时从后上抡到前下 */
+    let swing = -0.32;
+    if (u.lunge) { const q = Math.min(1, u.lunge.t / 0.2); swing = -1.8 + q * q * 2.5; }
+    ctx.save(); ctx.translate(x + 7, y - 8); ctx.rotate(swing);
     const bg = ctx.createLinearGradient(-1.6, -20, 1.6, 0); bg.addColorStop(0, '#eef4fa'); bg.addColorStop(1, '#8fa2b8');
     ctx.fillStyle = bg;
     ctx.beginPath(); ctx.moveTo(0, -22); ctx.lineTo(2, -18); ctx.lineTo(2, -2); ctx.lineTo(-2, -2); ctx.lineTo(-2, -18); ctx.closePath(); ctx.fill(); stroke(1);
+    if (u.lunge && u.lunge.t < 0.12) {
+      const q = u.lunge.t / 0.12;
+      ctx.strokeStyle = 'rgba(255,250,235,' + (0.55 * (1 - q)) + ')'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(0, -12, 12, -2.2, -2.2 + q * 2.2); ctx.stroke();
+    }
     ctx.fillStyle = GOLD; ctx.fillRect(-4.5, -2.6, 9, 2.4); ctx.fillRect(-1.3, -0.2, 2.6, 4); stroke(0.9);
     ctx.restore();
     /* 鸢盾：左手侧 */
@@ -1122,8 +1131,9 @@ function drawUnit(u) {
     ctx.fillStyle = hg;
     ctx.beginPath(); ctx.moveTo(x - 5.6, y - 10); ctx.lineTo(x - 4.6, y - 15); ctx.lineTo(x, y - 19.5); ctx.lineTo(x + 4.6, y - 15); ctx.lineTo(x + 5.6, y - 10); ctx.closePath(); ctx.fill(); stroke(1.2);
     ctx.fillStyle = 'rgba(10,14,20,0.8)'; ctx.fillRect(x - 4, y - 13, 8, 1.8);
-    /* 斜持长枪 */
-    ctx.save(); ctx.translate(x + 8, y - 2); ctx.rotate(0.42);
+    /* 斜持长枪：出手沿枪身前送突刺 */
+    const ext = u.lunge ? Math.sin(Math.PI * Math.min(1, u.lunge.t / 0.2)) * 6 : 0;
+    ctx.save(); ctx.translate(x + 8, y - 2); ctx.rotate(0.42); ctx.translate(0, -ext);
     ctx.strokeStyle = WOOD; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(0, 12); ctx.lineTo(0, -22); ctx.stroke();
     ctx.fillStyle = '#c8d4e0';
     ctx.beginPath(); ctx.moveTo(0, -29); ctx.lineTo(2.6, -20.5); ctx.lineTo(0, -18.5); ctx.lineTo(-2.6, -20.5); ctx.closePath(); ctx.fill(); stroke(1);
