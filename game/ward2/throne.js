@@ -429,6 +429,7 @@ class Unit {
     const d = UNITS[this.type];
     this.cd -= dt; this.healCd -= dt;
     if (this.atkT > 0) this.atkT = Math.max(0, this.atkT - dt);
+    if (this.lunge) { this.lunge.t += dt; if (this.lunge.t > 0.2) this.lunge = null; }
     /* 脱战回血 */
     this.reengage += dt;
     if (this.hp < this.maxHpNow() && this.reengage > 2) this.hp = Math.min(this.maxHpNow(), this.hp + this.maxHpNow() * 0.15 * dt);
@@ -457,7 +458,23 @@ class Unit {
     let dmg = this.dps() * (d.reload || 1) / 1;
     if (this.type === 'pike') { for (const e of [best]) if (e.def.charge) dmg *= 1.5; }
     if (this.mastery === 1) dmg /= 1; /* 已在 dps() 乘过 */
-    game.shots.push({ x: this.x, y: this.y, tx: best.x, ty: best.y, t: 0, life: 0.12, color: this.type === 'mage' ? '#b08aff' : this.type === 'cannon' ? '#ffb060' : '#ffe8a0', big: this.type === 'cannon' });
+    /* —— 出手动作 —— */
+    const ddx = best.x - this.x, ddy = best.y - this.y, dist = Math.max(1, hyp(ddx, ddy));
+    const ux = ddx / dist, uy = ddy / dist;
+    if (d.block) {
+      this.lunge = { dx: ux, dy: uy, t: 0 };
+      game.fx.push({ slash: 1, x: best.x, y: best.y, ang: Math.atan2(ddy, ddx), t: 0, life: 0.18 });
+    } else if (this.type === 'cannon') {
+      this.lunge = { dx: -ux, dy: -uy, t: 0 };
+      fxRing(this.x + ux * 13, this.y - 8 + uy * 13, 'rgba(255,220,120,', 22, 0.5, 3);
+      game.fx.push({ puff: 1, x: this.x + ux * 15, y: this.y - 10, t: 0, life: 0.5, vx: ux * 30, vy: -20 });
+    } else if (this.type === 'mage') {
+      fxRing(this.x + 9.5, this.y - 17.5, 'rgba(205,175,255,', 15, 0.55, 2);
+    } else if (this.type !== 'drum') {
+      fxLine(this.x + ux * 10, this.y - 5 + uy * 10, this.x + ux * 20, this.y - 5 + uy * 20, 'rgba(255,255,240,0.65)');
+    }
+    const fly = this.type === 'cannon' ? 470 : this.type === 'mage' ? 620 : this.type === 'xbow' ? 1000 : 880;
+    game.shots.push({ x: this.x + ux * 8, y: this.y - 6 + uy * 6, tx: best.x, ty: best.y, t: 0, life: Math.max(0.08, dist / fly), arc: this.type === 'cannon' ? Math.min(44, dist * 0.2) : 0, kind: this.type, color: this.type === 'mage' ? '#b08aff' : this.type === 'cannon' ? '#ffb060' : '#ffe8a0', big: this.type === 'cannon' });
     SFX.hit();
     hitUnit(this, best, dmg);
     if (d.pierce) {
@@ -476,7 +493,9 @@ class Unit {
       cand.sort((a, b2) => a.along - b2.along);
       for (let i2 = 0; i2 < Math.min(extra, cand.length); i2++) {
         hitUnit(this, cand[i2].e, dmg * 0.65);
-        game.shots.push({ x: this.x, y: this.y, tx: cand[i2].e.x, ty: cand[i2].e.y, t: 0, life: 0.1, color: '#cfe8a0', thin: 1 });
+        const e2 = cand[i2].e;
+        const d2 = Math.max(1, hyp(e2.x - this.x, e2.y - this.y));
+        game.shots.push({ x: this.x, y: this.y - 5, tx: e2.x, ty: e2.y, t: 0, life: Math.max(0.07, d2 / 1000), kind: 'xbow', thin: 1, color: '#cfe8a0' });
       }
     }
     if (d.splash) {
@@ -527,6 +546,13 @@ function castSpell(k, x, y) {
   return true;
 }
 function fxLine(x1, y1, x2, y2, color) { game.fx.push({ line: true, x1, y1, x2, y2, color, t: 0, life: 0.12 }); }
+function shotImpact(s) {
+  const x = s.tx, y = s.ty;
+  if (s.kind === 'cannon') { fxRing(x, y, 'rgba(255,150,60,', 30, 0.6, 3); fxBurst(x, y, '#ffb060', 6, 110); game.fx.push({ puff: 1, x, y: y - 4, t: 0, life: 0.55, vx: 0, vy: -16 }); }
+  else if (s.kind === 'mage') { fxRing(x, y, 'rgba(190,150,255,', 18, 0.5, 2); fxBurst(x, y, '#b08aff', 4, 60); }
+  else if (s.kind === 'xbow') { fxBurst(x, y, '#cfe8a0', 3, 90); }
+  else { fxBurst(x, y, '#ffe8a0', 3, 70); }
+}
 
 /* ============ 祝福（简化版波后奖励） ============ */
 const BOONS = [
@@ -724,7 +750,13 @@ function step(dt) {
   /* 波次结束 */
   if (game.waveActive && !game.spawnQueue.length && !game.enemies.length) endWave();
   /* 特效 */
-  for (const s of game.shots) s.t += dt;
+  for (const s of game.shots) {
+    s.t += dt;
+    const p = Math.min(1, s.t / s.life);
+    s.px = s.x + (s.tx - s.x) * p;
+    s.py = s.y + (s.ty - s.y) * p - (s.arc ? Math.sin(p * Math.PI) * s.arc : 0);
+    if (p >= 1 && !s.boomed) { s.boomed = 1; shotImpact(s); }
+  }
   game.shots = game.shots.filter(s => s.t < s.life);
   for (const f of game.fx) { f.t += dt; if (f.p) { f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 520 * dt; } }
   game.fx = game.fx.filter(f => f.t < f.life);
@@ -908,20 +940,56 @@ function draw() {
   /* 弹道/特效 */
   ctx.lineCap = 'round';
   for (const s of game.shots) {
-    if (s.big) {
-      ctx.strokeStyle = 'rgba(255,170,90,0.35)'; ctx.lineWidth = 6;
-      ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.tx, s.ty); ctx.stroke();
-      ctx.strokeStyle = s.color; ctx.lineWidth = 2.5;
-      ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.tx, s.ty); ctx.stroke();
-      ctx.fillStyle = '#fff0c0'; ctx.beginPath(); ctx.arc(s.tx, s.ty, 3, 0, 7); ctx.fill();
+    const p = Math.min(1, s.t / s.life);
+    const px2 = s.px !== undefined ? s.px : s.x + (s.tx - s.x) * p;
+    const py2 = s.py !== undefined ? s.py : s.y + (s.ty - s.y) * p;
+    const ang = Math.atan2(s.ty - py2 + (s.arc ? Math.cos(p * Math.PI) * s.arc * 0.9 : 0), s.tx - px2);
+    if (s.kind === 'cannon') {
+      for (let i2 = 1; i2 <= 3; i2++) {
+        const q = Math.max(0, p - i2 * 0.1);
+        ctx.fillStyle = 'rgba(185,192,202,' + (0.22 - i2 * 0.05) + ')';
+        ctx.beginPath(); ctx.arc(s.x + (s.tx - s.x) * q, s.y + (s.ty - s.y) * q - Math.sin(q * Math.PI) * s.arc, 1.6 + i2 * 1.1, 0, 7); ctx.fill();
+      }
+      ctx.fillStyle = '#20262e'; ctx.beginPath(); ctx.arc(px2, py2, 3.4, 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(px2 - 1, py2 - 1.1, 1.2, 0, 7); ctx.stroke();
+    } else if (s.kind === 'mage') {
+      for (let i2 = 1; i2 <= 3; i2++) {
+        const q = Math.max(0, p - i2 * 0.11);
+        ctx.fillStyle = 'rgba(176,138,255,' + (0.34 - i2 * 0.09) + ')';
+        ctx.beginPath(); ctx.arc(s.x + (s.tx - s.x) * q, s.y + (s.ty - s.y) * q, 3.4 - i2 * 0.7, 0, 7); ctx.fill();
+      }
+      const mg = ctx.createRadialGradient(px2, py2, 0.5, px2, py2, 5.5);
+      mg.addColorStop(0, '#fff'); mg.addColorStop(0.5, '#b08aff'); mg.addColorStop(1, 'rgba(176,138,255,0)');
+      ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(px2, py2, 5.5, 0, 7); ctx.fill();
     } else {
-      ctx.strokeStyle = s.color; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.tx, s.ty); ctx.stroke();
+      const bx2 = Math.cos(ang), by2 = Math.sin(ang);
+      const shx = s.kind === 'xbow' ? 7 : 9, col2 = s.kind === 'xbow' ? '#cfe8a0' : '#e8d8a8';
+      ctx.strokeStyle = s.kind === 'xbow' ? 'rgba(207,232,160,0.25)' : 'rgba(255,240,190,0.28)'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(px2, py2); ctx.lineTo(px2 - bx2 * 15, py2 - by2 * 15); ctx.stroke();
+      ctx.strokeStyle = col2; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(px2, py2); ctx.lineTo(px2 - bx2 * shx, py2 - by2 * shx); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(px2, py2, 1.3, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#d8d8d0'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px2 - bx2 * shx, py2 - by2 * shx); ctx.lineTo(px2 - bx2 * (shx + 3) - by2 * 1.8, py2 - by2 * (shx + 3) + bx2 * 1.8);
+      ctx.moveTo(px2 - bx2 * shx, py2 - by2 * shx); ctx.lineTo(px2 - bx2 * (shx + 3) + by2 * 1.8, py2 - by2 * (shx + 3) - bx2 * 1.8);
+      ctx.stroke();
     }
   }
   ctx.lineCap = 'butt';
   for (const f of game.fx) {
     const p = f.t / f.life;
+    if (f.slash) {
+      ctx.strokeStyle = 'rgba(255,250,230,' + (1 - p) + ')'; ctx.lineWidth = 2.6 - p * 1.6;
+      ctx.beginPath(); ctx.arc(f.x, f.y, 9 + p * 8, f.ang - 1.15 + p * 0.9, f.ang + 1.15 + p * 0.9); ctx.stroke();
+      continue;
+    }
+    if (f.puff) {
+      ctx.fillStyle = 'rgba(195,200,210,' + (0.38 * (1 - p)) + ')';
+      ctx.beginPath(); ctx.arc(f.x + f.vx * f.t, f.y + f.vy * f.t, 2.5 + p * 7, 0, 7); ctx.fill();
+      continue;
+    }
     if (f.p) {
       ctx.globalAlpha = 1 - p * p;
       if (f.coin) { ctx.fillStyle = f.color; ctx.beginPath(); ctx.ellipse(f.x, f.y, f.sz, f.sz * Math.abs(Math.cos(f.t * 9)), 0, 0, 7); ctx.fill(); }
@@ -986,6 +1054,8 @@ function drawUnit(u) {
   const x = u.x, y = u.y;
   ctx.fillStyle = 'rgba(0,0,0,0.30)'; ctx.beginPath(); ctx.ellipse(x + 3, y + 13, 13, 4.5, 0, 0, 7); ctx.fill();
   const lb = u.atkT > 0 ? u.atkT / 0.14 : 0;
+  const hasLunge = u.lunge && u.lunge.t < 0.2;
+  if (hasLunge) { ctx.save(); const q = Math.sin(Math.PI * u.lunge.t / 0.2); ctx.translate(u.lunge.dx * q * 7, u.lunge.dy * q * 5); }
   if (lb > 0) { ctx.save(); ctx.translate(x, y); ctx.scale(1 + lb * 0.14, 1 - lb * 0.05); ctx.translate(-x, -y); }
   /* —— Q 版盔甲战士：描边+分层+受光，逐职业手绘 —— */
   const C = d.color, OUT = 'rgba(14,20,28,0.9)';
@@ -1207,6 +1277,7 @@ function drawUnit(u) {
   ctx.fillStyle = '#ffd873';
   for (let i = 0; i < u.level; i++) ctx.fillRect(x - 9 + i * 7, y + 15, 4, 3);
   if (lb > 0) ctx.restore();
+  if (hasLunge) ctx.restore();
 }
 function drawEnemy(e) {
   const d = e.def;
