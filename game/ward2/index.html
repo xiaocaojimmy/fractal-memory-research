@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>王座防线 Throne Line</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <style>
   :root{
     --gold:#c9a45a; --gold-hi:#e9c87e; --gold-deep:#8a6a33; --gold-dim:rgba(201,164,90,.22);
@@ -110,6 +110,17 @@
   .fundBtn.ok em{color:#e9c87e}
   .fundBtn.ok:hover{background:rgba(201,164,90,0.12)}
   .fundBtn:disabled{cursor:default;opacity:0.75}
+  /* ===== 移动端适配 ===== */
+  html,body{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  #cvs{touch-action:none}
+  .unitCard,.bigbtn,.ghostbtn,.fundBtn,.mstCard,.diffBtn{min-height:40px}
+  #rotHint{display:none;position:fixed;inset:0;z-index:99;background:rgba(6,10,16,0.94);color:#ffe8b0;font-size:17px;line-height:2;align-items:center;justify-content:center;text-align:center;letter-spacing:2px}
+  @media (orientation:portrait) and (pointer:coarse){#rotHint{display:flex}}
+  body.tiny .hint,body.tiny .bkP{font-size:15px;line-height:1.8}
+  body.tiny .bkH{font-size:16px}
+  body.tiny .fundBtn i{font-size:12px} body.tiny .fundBtn b,body.tiny .fundBtn em{font-size:14px}
+  body.tiny #tutTip{font-size:15px;max-width:86vw}
+  body.tiny .unitCard{min-width:86px}
   #tutTip.hidden{display:none}
   #tutX{cursor:pointer;color:var(--dim);padding:0 2px}
   #tutX:hover{color:var(--gold-hi)}
@@ -247,6 +258,7 @@
       </div>
     </div>
     <div id="tutTip" class="hidden"><span id="tutTxt"></span><b id="tutX">✕</b></div>
+    <div id="rotHint">📱<br>横屏体验完整战场<br><span style="font-size:12px;color:#8fa3bd">转一下手机就好</span></div>
   </div>
   </div>
 <script>
@@ -254,10 +266,12 @@
 (function fit() {
   var app = document.getElementById('app');
   function upd() {
-    var s = Math.min((innerWidth - 20) / 1296, (innerHeight - 20) / 606, 1.7);
-    app.style.zoom = Math.max(0.6, s);
+    var s = Math.min((innerWidth - 12) / 1296, (innerHeight - 12) / 606, 1.7);
+    s = Math.max(0.42, s);
+    app.style.zoom = s;
+    document.body.classList.toggle('tiny', s < 0.8);
   }
-  addEventListener('resize', upd); upd();
+  addEventListener('resize', upd); addEventListener('orientationchange', upd); upd();
 })();
 </script>
 <script>document.write('<scr' + 'ipt src="throne.js?c=' + (location.search.includes('nocache') ? Math.random() : 1) + '"><\/scr' + 'ipt>');</script>
