@@ -691,8 +691,8 @@ function loseRun() {
   showEnd(false, gain);
 }
 function showEnd(win, gain) {
-  $('endTitle').textContent = win ? '王 座 守 住 了' : '王 座 陷 落';
-  $('endTitle').style.color = win ? '#8fdc7a' : '#ff7a6a';
+  $('endTitle').textContent = win ? '王座守住了' : '王座陷落';
+  $('endTitle').style.color = win ? '#9fd08a' : '#d0796a';
   $('endSub').textContent = '第 ' + game.wave + ' 波 · 击杀 ' + game.stats.kills + ' · 漏怪 ' + game.stats.leaks + ' · 最佳连杀 ' + game.comboBest + ' · 🏅 勋章 +' + gain;
   const nb = $('btnNextCh');
   if (nb) { nb.style.display = win && game.ch < 2 ? '' : 'none'; nb.textContent = '进入下一章 · ' + MAPS[game.ch + 1].name + ' ▶'; }
@@ -1555,14 +1555,11 @@ function renderArmory() {
     const n = SAVE.arm[k] || 0;
     const cost = SAVE.armCost(k);
     const card = document.createElement('div');
-    card.className = 'boonCard';
-    card.style.flex = '1 1 30%';
-    card.style.minWidth = '180px';
-    card.innerHTML = '<b>' + a.name + ' <span style="color:#8fdc7a">Lv' + n + '/' + a.max + '</span></b><div>' + a.desc + '</div>' +
-      '<div style="margin-top:8px;color:' + (cost && SAVE.medals >= cost ? '#ffd873' : '#7a8a9a') + '">' + (cost ? '🏅 ' + cost : '已满级') + '</div>';
-    if (cost) {
-      card.style.cursor = 'pointer';
-      card.addEventListener('click', () => { if (SAVE.buyArm(k)) { SFX.ding(); renderArmory(); } else { SFX.err ? SFX.err() : SFX.die(); toast('勋章不足'); } });
+    card.className = 'boonCard armCard' + (cost && SAVE.medals >= cost ? '' : ' off');
+    card.innerHTML = '<b>' + a.name + '<span style="float:right;color:var(--ok);font-size:13px">Lv' + n + ' / ' + a.max + '</span></b><div>' + a.desc + '</div>' +
+      (cost ? '<div class="amCost' + (SAVE.medals >= cost ? '' : ' poor') + '">🏅 ' + cost + '</div>' : '<div class="amMax">已 满 级</div>');
+    if (cost && SAVE.medals >= cost) {
+      card.addEventListener('click', () => { if (SAVE.buyArm(k)) { SFX.ding(); renderArmory(); } });
     }
     box.appendChild(card);
   }
