@@ -66,7 +66,7 @@ const UNITS = {
   arch:  { name: '弓手', cost: 70, pop: 1, hp: 45, dps: 28, range: 6.0, block: 0, fort: false, speed: 0, color: '#5a9b6a', key: '3', desc: '远程单体重装' },
   mage:  { name: '法师', cost: 130, pop: 2, hp: 40, dps: 26, range: 3.4, block: 0, splash: 1.1, magic: 1, color: '#7a6ab8', key: '4', desc: '群体溅射 · 魔法（怨魂克物理）' },
   holy:  { name: '牧师', cost: 100, pop: 1, hp: 40, dps: 0, heal: 16, range: 2.6, block: 0, color: '#c9b45a', key: '5', desc: '治疗残血友军' },
-  cannon:{ name: '炮台', cost: 190, pop: 3, hp: 70, dps: 70, range: 5.5, block: 0, reload: 3.2, fort: true, magic: 1, color: '#5a6a7a', key: '6', desc: '要塞基座 · 重炮慢填' },
+  cannon:{ name: '炮台', cost: 190, pop: 3, hp: 70, dps: 70, range: 5.5, block: 0, reload: 3.2, fort: true, magic: 1, color: '#5a6a7a', key: '6', desc: '仅石垒 · 落垒射程+15% 攻速+18%' },
   xbow:  { name: '弩手', cost: 90, pop: 1, hp: 50, dps: 24, range: 6.5, block: 0, pierce: 3, color: '#4a8a5a', key: '7', desc: '穿透：一箭贯穿一排（最多3）', ch2: 1 },
   drum:  { name: '战鼓手', cost: 95, pop: 1, hp: 85, dps: 0, range: 2.4, block: 0, auraU: 0.15, color: '#c9a44a', key: '8', desc: '鼓声：2.4 格内友军伤害 +15%', ch2: 1 },
 };
@@ -151,6 +151,21 @@ function shade(hex, k) {
 }
 let toastMsg = null, toastT = 0;
 function toast(s) { toastMsg = s; toastT = 2.6; }
+/* 3 步渐进教学（全局一次，localStorage 门控） */
+const TUT_MSGS = [
+  '', 
+  '⚔ 敌人从东边直扑王座——下方选单位卡（1-8）排布战线：近战截怪、远程墙后输出，王座交给你守',
+  '⛰ 金框格是石垒炮位——只有炮台能落垒，且射程 +15%、攻速 +18%；金够 190◈ 按 6 摆一门试试',
+  '✦ 点单位可升级，Lv3 觉醒二选一专精；Q 流星 / W 暴雪 / E 圣光——怪潮破口的救命键，别省',
+];
+let tutTimer = 0;
+function showTut(step) {
+  try { if (+localStorage.getItem('throne.tut') >= step) return; localStorage.setItem('throne.tut', String(step)); } catch (e) { return; }
+  const el = $('tutTip'); if (!el) return;
+  $('tutTxt').textContent = TUT_MSGS[step];
+  el.classList.remove('hidden');
+  clearTimeout(tutTimer); tutTimer = setTimeout(() => el.classList.add('hidden'), 9000);
+}
 
 /* ============ 2.0 存档：勋章 + 军械库 + 章节进度（localStorage） ============ */
 const ARMORY = {
@@ -246,6 +261,7 @@ function nextWave() {
   }
   game.spawnQueue = q.sort((a, b) => a.at - b.at);
   game.spawnT = 0; game.waveActive = true;
+  if (game.wave === 2) showTut(2); else if (game.wave === 5) showTut(3);
   syncHud();
 }
 
@@ -405,6 +421,7 @@ class Unit {
   }
   tier() { const d = UNITS[this.type]; const i = this.level - 1; return { hp: d.hp * UPG.hp[i], dps: d.dps * UPG.dps[i], up: i < 2 ? Math.round(d.cost * UPG.cost[i + 1]) : 0 }; }
   dps() { let v = this.tier().dps * (1 + game.bonusDmg + 0.05 * game.fundDmg + 0.04 * (SAVE.arm.a || 0)) * boonMul(this.type); for (const d2 of game.units) { if (!d2.dead && d2 !== this && UNITS[d2.type].auraU && hyp(d2.x - this.x, d2.y - this.y) < UNITS[d2.type].range * TILE) v *= 1 + UNITS[d2.type].auraU; } if (this.mastery === 1) v *= 1.35; if (this.mastery === 2) v *= 0.85; return v; }
+  onFort() { return this.type === 'cannon' && isFort(this.c, this.r); }
   healPow() { return (UNITS[this.type].heal || 0) * UPG.hp[this.level - 1] * 1; }
   maxHpNow() { let v = UNITS[this.type].hp * UPG.hp[this.level - 1] * boonHp() * (DIFFS[game.diff].cost > 1 ? 0.9 : 1); if (this.mastery === 1) v *= 1.3; return v; }
   damage(raw, from) {
@@ -443,7 +460,7 @@ class Unit {
     }
     if (this.cd > 0) return;
     /* 找目标 */
-    let range = d.range * TILE * (this.mastery === 2 ? 1.15 : 1);
+    let range = d.range * TILE * (this.mastery === 2 ? 1.15 : 1) * (this.onFort() ? 1.15 : 1);
     let best = null, bd = range;
     for (const e of game.enemies) {
       if (e.dead || e.hp <= 0) continue;
@@ -453,7 +470,7 @@ class Unit {
     }
     if (!best) return;
     const spd = this.mastery === 1 ? 1 : this.mastery === 2 ? 1.4 : 1;
-    this.cd = (d.reload || 1.0) / spd / (d.atkRate || 1);
+    this.cd = (d.reload || 1.0) / spd / (d.atkRate || 1) * (this.onFort() ? 0.82 : 1);
     this.atkT = 0.14;
     let dmg = this.dps() * (d.reload || 1) / 1;
     if (this.type === 'pike') { for (const e of [best]) if (e.def.charge) dmg *= 1.5; }
@@ -921,19 +938,28 @@ function draw() {
   ctx.fillStyle = 'rgba(255,220,130,0.75)';
   ctx.fillRect(tx - 6.5, ty - 18, 3.4, 5.5); ctx.fillRect(tx + 3.1, ty - 18, 3.4, 5.5);
   ctx.restore();
-  /* 要塞基座 */
+  /* 要塞基座（石垒：选炮台卡时呼吸绿光提示落位） */
+  const fortPick = game.build === 'cannon';
   for (const [c, r] of FORTL()) {
     const placed = isFortPlaced(c, r);
     const fx0 = c * TILE + 5, fy0 = gy(r) - TILE / 2 + 5, fsz = TILE - 10;
+    if (fortPick && !placed) {
+      const fp = 0.5 + 0.4 * Math.sin(game.t * 4 + c);
+      ctx.fillStyle = 'rgba(110,220,140,' + (0.10 + fp * 0.10) + ')';
+      ctx.fillRect(fx0, fy0, fsz, fsz);
+      ctx.strokeStyle = 'rgba(130,230,150,' + (0.5 + fp * 0.45) + ')';
+      ctx.lineWidth = 2; ctx.strokeRect(fx0 - 1, fy0 - 1, fsz + 2, fsz + 2);
+    } else {
     ctx.fillStyle = placed ? 'rgba(90,110,140,0.18)' : 'rgba(255,215,115,0.07)';
     ctx.fillRect(fx0, fy0, fsz, fsz);
     ctx.strokeStyle = placed ? 'rgba(120,160,200,0.35)' : 'rgba(255,215,115,0.55)';
     ctx.lineWidth = 1.5; ctx.strokeRect(fx0, fy0, fsz, fsz);
-    ctx.strokeStyle = placed ? 'rgba(150,190,230,0.5)' : 'rgba(255,215,115,0.7)'; ctx.lineWidth = 2;
+    }
+    ctx.strokeStyle = fortPick && !placed ? 'rgba(150,240,170,0.8)' : placed ? 'rgba(150,190,230,0.5)' : 'rgba(255,215,115,0.7)'; ctx.lineWidth = 2;
     for (const [cx2, cy2, sx3, sy3] of [[fx0, fy0, 1, 1], [fx0 + fsz, fy0, -1, 1], [fx0, fy0 + fsz, 1, -1], [fx0 + fsz, fy0 + fsz, -1, -1]]) {
       ctx.beginPath(); ctx.moveTo(cx2 + sx3 * 7, cy2); ctx.lineTo(cx2, cy2); ctx.lineTo(cx2, cy2 + sy3 * 7); ctx.stroke();
     }
-    if (!placed) { ctx.fillStyle = 'rgba(255,215,115,0.4)'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('要塞', c * TILE + TILE / 2, gy(r) + 3); }
+    if (!placed) { ctx.fillStyle = 'rgba(255,215,115,0.55)'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(fortPick ? '炮位' : '要塞', c * TILE + TILE / 2, gy(r) + 3); }
   }
   /* 单位 */
   for (const u of game.units) drawUnit(u);
@@ -1021,7 +1047,7 @@ function draw() {
     ctx.strokeStyle = 'rgba(160,220,255,0.9)'; ctx.lineWidth = 2;
     ctx.strokeRect(u.c * TILE + 2, gy(u.r) - TILE / 2 + 2, TILE - 4, TILE - 4);
     ctx.strokeStyle = 'rgba(160,220,255,0.25)';
-    ctx.beginPath(); ctx.arc(u.x, u.y, UNITS[u.type].range * TILE * (u.mastery === 2 ? 1.15 : 1), 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(u.x, u.y, UNITS[u.type].range * TILE * (u.mastery === 2 ? 1.15 : 1) * (u.onFort ? u.onFort() ? 1.15 : 1 : 1), 0, 7); ctx.stroke();
   }
   /* 文本 */
   for (const t of game.texts) {
@@ -1207,6 +1233,11 @@ function drawUnit(u) {
     og2.addColorStop(0, '#fff'); og2.addColorStop(1, 'rgba(255,230,140,0)');
     ctx.fillStyle = og2; ctx.beginPath(); ctx.arc(x + 9, y - 14, 4 + Math.sin(t * 3) * 0.5, 0, 7); ctx.fill();
   } else if (u.type === 'cannon') {
+    if (u.onFort()) { /* 石垒加成：金光环 */
+      const fp2 = 0.5 + 0.5 * Math.sin(t * 3);
+      ctx.strokeStyle = 'rgba(255,215,115,' + (0.3 + fp2 * 0.25) + ')'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.ellipse(x, y + 12, 15, 5.5, 0, 0, 7); ctx.stroke();
+    }
     /* 石台 + 黑铁炮 */
     const sg2 = ctx.createLinearGradient(x - 12, y - 2, x + 12, y + 13); sg2.addColorStop(0, '#6a7482'); sg2.addColorStop(1, '#3a4450');
     ctx.fillStyle = sg2;
@@ -1605,9 +1636,10 @@ function hoverTarget() {
       const lines = [{ t: d.name + ' · Lv' + u.level + (u.mastery ? ' ★觉醒' : ''), c: '#ffe8b0' },
         { t: '生命 ' + Math.round(u.hp) + ' / ' + Math.round(u.maxHpNow()) },
         { t: d.heal ? '治疗 ' + Math.round(u.healPow()) + ' / 次' : (u.dps() ? '伤害 ' + Math.round(u.dps()) + (d.splash ? '（溅射）' : '') : '') },
-        { t: d.block ? '阻挡 ' + d.block + ' · 射程 ' + d.range : '射程 ' + d.range + ' 格' },
+        { t: d.block ? '阻挡 ' + d.block + ' · 射程 ' + d.range : '射程 ' + (d.range * (u.onFort() ? 1.15 : 1)).toFixed(1) + ' 格' },
+        u.onFort() ? { t: '⛰ 石垒加成：射程 +15% · 攻速 +18%', c: '#ffd873' } : null,
         u.level < 3 ? { t: '升级 ' + t.up + '◈ → ' + (u.level === 2 ? '满级后觉醒' : '下一级伤害 ' + Math.round(d.dps * UPG.dps[u.level])) } : { t: '点击觉醒专精' }];
-      return { lines: lines.filter(l => l.t) };
+      return { lines: lines.filter(l => l && l.t) };
     }
   }
   for (const e of game.enemies) {
@@ -1618,6 +1650,13 @@ function hoverTarget() {
         { t: '速度 ' + e.def.spd.toFixed(2) + ' · 赏金 ' + e.gold + '◈' },
         { t: '伤害 ' + Math.round(e.dpsNow()) + (e.def.ranged ? '（远程）' : '') + (e.def.fly ? '（飞行）' : '') }] };
     }
+  }
+  const [hcx, hcr] = cellOf(mouse.x, mouse.y);
+  if (hcr >= 0 && hcr < MAP_H && isFort(hcx, hcr) && !unitAt(hcx, hcr)) {
+    return { lines: [{ t: '⛰ 石垒 · 炮位', c: '#ffd873' },
+      { t: '炮台专用基座（近战与远程不得入垒）' },
+      { t: '炮台落垒：射程 +15% · 攻速 +18%' },
+      { t: game.build === 'cannon' ? '点击此处放置炮台' : '按 6 选炮台卡后放置 · 每图仅 6 垒' }] };
   }
   return null;
 }
@@ -1711,7 +1750,8 @@ cvs.addEventListener('click', (ev) => {
 });
 document.addEventListener('keydown', (ev) => {
   const k = ev.key.toLowerCase();
-  if (k === 'escape') { game.build = null; game.aimSpell = null; game.sel = null; hideSel(); syncHud(); return; }
+  if (k === 'escape') { if (!$('ovBook').classList.contains('hidden')) hideOv('ovBook'); else if (!$('ovArm').classList.contains('hidden')) hideOv('ovArm'); else { game.build = null; game.aimSpell = null; game.sel = null; hideSel(); syncHud(); } return; }
+  if (k === 'h') { const ov = $('ovBook'); if (game.state === 'title' || !ov.classList.contains('hidden')) { ov.classList.contains('hidden') ? showOv('ovBook') : hideOv('ovBook'); } return; }
   if (game.state !== 'play') return;
   const keys = Object.keys(UNITS);
   const idx = keys.findIndex(t => UNITS[t].key === k);
@@ -1770,6 +1810,7 @@ function startRun(diff, ch, daily) {
   renderBg();
   const D = DIFFS[diff];
   game.state = 'play'; game.t = 0; game.paused = false;
+  showTut(1);
   game.lives = D.lives; game.gold = 210 + 150 * (SAVE.arm.g || 0) + 60 * game.ch; game.wave = 0; game.waveActive = false;
   game.spawnQueue = []; game.units = []; game.enemies = []; game.shots = []; game.texts = []; game.fx = [];
   game.pop = 0; game.popBonus = SAVE.arm.p || 0; game.fundDmg = 0; game.fundPop = 0;
@@ -1905,6 +1946,7 @@ function runSim(n) {
           const hasRanged = game.units.filter(u => !UNITS[u.type].block && u.type !== 'holy' && u.type !== 'drum').length;
           order = (game.gold > 160 || hasRanged < 2) ? cheap.concat(big) : cheap;
           order.sort((a, b) => ((QUOTA[b] || 2) - (cnt[b] || 0)) - ((QUOTA[a] || 2) - (cnt[a] || 0)) || costOf(a) - costOf(b));
+          if (game.wave >= 4 && !(cnt.cannon > 0) && game.gold >= 340 && usedPop() <= capTotal() - 3 && FORTL().some(fc => !unitAt(fc[0], fc[1]))) order = ['cannon'].concat(order.filter(t => t !== 'cannon'));
           if (game.enemies.some(e2 => e2.def.physRes) && (cnt.mage || 0) < 2 && order.includes('mage')) order = ['mage'].concat(order.filter(t => t !== 'mage'));
           if (game.enemies.filter(e2 => e2.def.aura).length && (cnt.mage || 0) < 1 && order.includes('mage')) order = ['mage'].concat(order.filter(t => t !== 'mage'));
         } else order = avail.slice();
@@ -2033,6 +2075,9 @@ function boot() {
   };
   $('btnArmory') && $('btnArmory').addEventListener('click', openArm);
   $('btnArmBack') && $('btnArmBack').addEventListener('click', () => hideOv('ovArm'));
+  $('btnBook') && $('btnBook').addEventListener('click', () => showOv('ovBook'));
+  $('btnBookBack') && $('btnBookBack').addEventListener('click', () => hideOv('ovBook'));
+  $('tutX') && $('tutX').addEventListener('click', () => $('tutTip').classList.add('hidden'));
   $('btnDaily') && $('btnDaily').addEventListener('click', () => { hideOv('ovArm'); startRun('hard', 0, true); toast('每日突袭 · 勋章 ×2'); });
   $('btnNextCh') && $('btnNextCh').addEventListener('click', () => { hideOv('ovEnd'); startRun(game.diff, Math.min(2, game.ch + 1)); });
   renderArmory();
@@ -2130,12 +2175,25 @@ if (SIM_N > 0) {
     R.push(['physres', whp - wr.hp < 60]); }
   { SAVE.raw.medals = 999; const okr = SAVE.buyArm('g'); const lv = SAVE.arm.g; SAVE.raw.arm = {}; SAVE.raw.medals = 0; SAVE.flush();
     R.push(['armory', okr === true && lv === 1]); }
+  startRun('normal', 0); game.gold = 999;
+  { game.unlocked.add('cannon'); game.pop = 0;
+    const f0 = FORTL()[0]; const okr = placeTower(f0[0], f0[1], 'cannon'); const cu = game.units[game.units.length - 1];
+    const eg0 = new Enemy('goblin', 0.1, 0); eg0.x = cu.x + 100; eg0.y = cu.y; eg0.hp = eg0.maxHp = 999999; eg0.speed = 0; game.enemies.push(eg0);
+    cu.cd = 0; cu.update(0.05); const cdOn = cu.cd;
+    cu.c = -9; cu.r = -9; cu.cd = 0; eg0.x = cu.x + 100; eg0.y = cu.y; cu.update(0.05); const cdOff = cu.cd;
+    const f1 = FORTL().find(fc => !unitAt(fc[0], fc[1]));
+    R.push(['fortboost', okr === true && cdOn > 0 && cdOn < cdOff * 0.95 && !!f1]); }
+  { const bk = $('btnBook'), obv = $('ovBook');
+    bk && bk.click(); const shown = obv && !obv.classList.contains('hidden');
+    const bb = $('btnBookBack'); bb && bb.click();
+    R.push(['book', !!bk && !!obv && shown && obv.classList.contains('hidden')]); }
   startRun('normal');
   const bad = R.filter(x => x[1] === false).map(x => x[0]);
   document.title = (bad.length ? 'UI FAIL: ' + bad.join(',') : 'UI PASS ' + R.length) + ' ' + JSON.stringify(R.map(x => [x[0], x[1]]));
   } catch (e) { document.title = 'UITEST ERR ' + e.message + ' | ' + String(e.stack || '').split('\n')[1]; }
 } else {
   boot();
+  if (Q.get('book') === '1') showOv('ovBook');
   if (Q.get('shot')) {
     shotRun(Math.max(1, Math.min(15, +Q.get('shot') || 3)));
     document.title = 'SHOT ok w' + game.wave + ' en' + game.enemies.length + ' q' + game.spawnQueue.length + ' act' + (game.waveActive ? 1 : 0) + ' st' + game.state + ' pa' + (game.paused ? 1 : 0) + ' wT' + Math.round(game.waitT || 0) + ' bo' + !!game.boonMode;
