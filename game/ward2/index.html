@@ -114,8 +114,9 @@
   html,body{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
   #cvs{touch-action:none}
   .unitCard,.bigbtn,.ghostbtn,.fundBtn,.mstCard,.diffBtn{min-height:40px}
-  #rotHint{display:none;position:fixed;inset:0;z-index:99;background:rgba(6,10,16,0.94);color:#ffe8b0;font-size:17px;line-height:2;align-items:center;justify-content:center;text-align:center;letter-spacing:2px}
-  @media (orientation:portrait) and (pointer:coarse){#rotHint{display:flex}}
+  #rotHint{display:none;position:fixed;inset:0;z-index:99;background:rgba(6,10,16,0.94);color:#ffe8b0;font-size:17px;line-height:2;align-items:center;justify-content:center;text-align:center;flex-direction:column;gap:10px;letter-spacing:2px}
+  #rotHint.show{display:flex}
+  #rotGo{margin-top:8px;padding:10px 26px;font-size:14px;color:#cfe3ff;background:rgba(20,30,46,0.9);border:1px solid rgba(120,160,200,0.4);cursor:pointer}
   body.tiny .hint,body.tiny .bkP{font-size:15px;line-height:1.8}
   body.tiny .bkH{font-size:16px}
   body.tiny .fundBtn i{font-size:12px} body.tiny .fundBtn b,body.tiny .fundBtn em{font-size:14px}
@@ -258,20 +259,36 @@
       </div>
     </div>
     <div id="tutTip" class="hidden"><span id="tutTxt"></span><b id="tutX">✕</b></div>
-    <div id="rotHint">📱<br>横屏体验完整战场<br><span style="font-size:12px;color:#8fa3bd">转一下手机就好</span></div>
+    <div id="rotHint"><div style="font-size:34px">📱</div><div>横屏体验完整战场</div><div style="font-size:12px;color:#8fa3bd">转一下手机 · 并确保系统「自动旋转」已开启</div><button id="rotGo">不管了，继续</button></div>
   </div>
   </div>
 <script>
 /* 自适应：整块 zoom 缩放（HUD+舞台同步，坐标映射在 evPos 自动正确） */
 (function fit() {
   var app = document.getElementById('app');
+  var rotAck = false;
+  try { rotAck = sessionStorage.getItem('throne.rotAck') === '1'; } catch (e) {}
   function upd() {
     var s = Math.min((innerWidth - 12) / 1296, (innerHeight - 12) / 606, 1.7);
     s = Math.max(0.42, s);
     app.style.zoom = s;
     document.body.classList.toggle('tiny', s < 0.8);
+    /* 竖屏提示：JS 判定（部分手机 WebView 旋转后 orientation 媒体查询不重算） */
+    var portrait = innerHeight > innerWidth * 1.05;
+    var phone = (window.matchMedia && matchMedia('(pointer:coarse)').matches) || ('ontouchstart' in window && Math.min(innerWidth, innerHeight) < 620);
+    document.getElementById('rotHint').classList.toggle('show', portrait && phone && !rotAck);
   }
-  addEventListener('resize', upd); addEventListener('orientationchange', upd); upd();
+  document.getElementById('rotGo').addEventListener('click', function () {
+    rotAck = true;
+    try { sessionStorage.setItem('throne.rotAck', '1'); } catch (e) {}
+    document.getElementById('rotHint').classList.remove('show');
+  });
+  addEventListener('resize', upd);
+  addEventListener('orientationchange', function () { upd(); setTimeout(upd, 320); setTimeout(upd, 800); });
+  /* 兜底轮询：个别 WebView 旋转不触发 resize/orientationchange */
+  var pw = innerWidth, ph = innerHeight;
+  setInterval(function () { if (innerWidth !== pw || innerHeight !== ph) { pw = innerWidth; ph = innerHeight; upd(); } }, 1200);
+  upd();
 })();
 </script>
 <script>document.write('<scr' + 'ipt src="throne.js?c=' + (location.search.includes('nocache') ? Math.random() : 1) + '"><\/scr' + 'ipt>');</script>
