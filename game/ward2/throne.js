@@ -66,7 +66,7 @@ const UNITS = {
   arch:  { name: '弓手', cost: 70, pop: 1, hp: 45, dps: 28, range: 6.0, block: 0, fort: false, speed: 0, color: '#5a9b6a', key: '3', desc: '远程单体重装' },
   mage:  { name: '法师', cost: 130, pop: 2, hp: 40, dps: 26, range: 3.4, block: 0, splash: 1.1, magic: 1, color: '#7a6ab8', key: '4', desc: '群体溅射 · 魔法（怨魂克物理）' },
   holy:  { name: '牧师', cost: 100, pop: 1, hp: 40, dps: 0, heal: 16, range: 2.6, block: 0, color: '#c9b45a', key: '5', desc: '治疗残血友军' },
-  cannon:{ name: '炮台', cost: 190, pop: 3, hp: 70, dps: 70, range: 5.5, block: 0, reload: 3.2, fort: true, magic: 1, color: '#5a6a7a', key: '6', desc: '仅石垒 · 落垒射程+15% 攻速+18%' },
+  cannon:{ name: '炮台', cost: 165, pop: 3, hp: 70, dps: 70, range: 5.5, block: 0, reload: 3.2, fort: true, magic: 1, color: '#5a6a7a', key: '6', desc: '仅石垒 · 落垒射程+15% 攻速+18%' },
   xbow:  { name: '弩手', cost: 90, pop: 1, hp: 50, dps: 24, range: 6.5, block: 0, pierce: 3, color: '#4a8a5a', key: '7', desc: '穿透：一箭贯穿一排（最多3）', ch2: 1 },
   drum:  { name: '战鼓手', cost: 95, pop: 1, hp: 85, dps: 0, range: 2.4, block: 0, auraU: 0.15, color: '#c9a44a', key: '8', desc: '鼓声：2.4 格内友军伤害 +15%', ch2: 1 },
 };
@@ -199,9 +199,9 @@ function wavePlan(n, ch) {
   const hpMul = Math.pow(CH_CURVE[ch], n - 1);
   const q = []; let at = 0;
   const add = (type, k, gap, line) => { for (let i = 0; i < k; i++) { q.push({ type, at, line: line || 0 }); at += gap; } };
-  if (n === 1) add('goblin', 5, 1.1);
-  else if (n === 2) add('goblin', 6, 0.9);
-  else if (n === 3) { add('wolf', 3, 1.2); add('goblin', 5, 0.8); }
+  if (n === 1) add('goblin', 7, 0.95);
+  else if (n === 2) add('goblin', 9, 0.75);
+  else if (n === 3) { add('wolf', 4, 1.1); add('goblin', 6, 0.7); }
   else if (n === 4) { add('orc', 2, 1.6); add('goblin', 5, 0.7); }
   else if (n === 5) { add('bat', 3, 0.9); add('wolf', 4, 0.8); }
   else if (n === 6) { add('orc', 4, 1.3); add('shaman', 3, 1.4); add('goblin', 5, 0.6); }
@@ -243,7 +243,10 @@ function nextWave() {
   game.bloodMoon = mod === 'bloodmoon';
   if (game.bloodMoon) { game.banner = { txt: '血 月 袭 击', sub: '全员狂化 · 清场缴获巨金', t: 0, life: 3, color: '#ff6a5a' }; }
   else if (game.waveMod) { game.banner = { txt: '词缀 · ' + ({ swift: '疾行', iron: '玄铁', tough: '坚韧' })[game.waveMod], t: 0, life: 2.4, color: '#9fdcff' }; }
-  else if (game.wave === 1) game.banner = { txt: '王座防线', sub: '布好你的墙 · 第一波来了', t: 0, life: 2.8, color: '#ffd873' };
+  else if (game.wave === 1) {
+    const chHint = ['布好你的墙 · 旷野直路，近战成排、远程殿后', '东南双路压境 · 南边会出怪，后排远程朝两边留', '两路合围 · 兵分两防，炮火覆盖双路'][game.ch] || '布好你的墙 · 第一波来了';
+    game.banner = { txt: MAPS[game.ch].name || '王座防线', sub: chHint, t: 0, life: 3.2, color: '#ffd873' };
+  }
   let q = wavePlan(Math.min(game.wave, 15 + (game.endless ? game.wave - TOTAL_WAVES : 0)), game.ch);
   /* 多路出怪分配 */
   const mp = game.map;
@@ -324,6 +327,19 @@ class Enemy {
     }
     /* 飞向王座；2.6 格内有阻挡单位则偏置接敌（AIGIS 式索敌） */
     let tx = gx(THR().c), ty = gy(THR().r);
+    /* 爆破兵：5 格内有炮台则优先狙炮位 */
+    if (this.def.boom) {
+      let cg = null, cd0 = 5.2 * TILE;
+      for (const u of game.units) { if (u.type !== 'cannon' || u.dead) continue; const dd = hyp(u.x - this.x, u.y - this.y); if (dd < cd0) { cd0 = dd; cg = u; } }
+      if (cg) {
+        tx = cg.x; ty = cg.y;
+        if (cd0 < 18) { this.boomT += dt * 2.6; if (this.boomT > 1.0) { boomExplode(this); return; } }
+        const dx2 = cg.x - this.x, dy2 = cg.y - this.y, d2 = hyp(dx2, dy2) || 1;
+        const sp2 = this.speedNow() * dt;
+        this.x += dx2 / d2 * sp2; this.y += dy2 / d2 * sp2;
+        return;
+      }
+    }
     let nb = null, nd = 4.2 * TILE;
     for (const u of game.units) {
       if (this.def.fly) break;
@@ -617,7 +633,7 @@ const FUNDS = {
 function fundCost(k) { return Math.round(FUNDS[k].base + FUNDS[k].step * FUNDS[k].n); }
 function fundTry(k, slack) {
   const c = fundCost(k);
-  if (game.gold < c + (slack || 0) || game.wave < 8) return false;
+  if (game.gold < c + (slack || 0) || (game.wave < 8 && !SIM_N)) return false;
   game.gold -= c;
   if (k === 'dmg') game.fundDmg++; else game.fundPop++;
   SFX.ding(); addText(W / 2, 130, FUNDS[k].name + ' · ' + FUNDS[k].desc, '#ffd873', 14, -28);
@@ -1074,6 +1090,36 @@ function draw() {
     ctx.globalAlpha = 1;
   }
   ctx.restore();
+  /* 下一波预告（备战期常驻：决策需要信息） */
+  if (game.state === 'play' && !game.waveActive && !game.boonMode && !game.masteryPending && game.wave < TOTAL_WAVES) {
+    const plan = wavePlan(game.wave + 1, game.ch);
+    const cnt = {}; for (const e of plan) cnt[e.type] = (cnt[e.type] || 0) + 1;
+    const keys = Object.keys(cnt);
+    const isBoss = keys.some(k => ENEMIES[k].boss);
+    ctx.font = 'bold 12px sans-serif';
+    const nw = game.wave + 1;
+    const pre = (isBoss ? '⚠ 首领波 · ' : game.wave >= 9 ? '重压波 · ' : '下一波 · ') + nw + ' / ' + TOTAL_WAVES + ((nw >= 6 && nw % 2 === 0) ? ' · 精英' : '') + '　';
+    const preW = ctx.measureText(pre).width;
+    let segW = 0; const segs = [];
+    for (const k of keys) { const w2 = ctx.measureText(ENEMIES[k].name + '×' + cnt[k]).width + 22; segs.push({ k, w: w2 }); segW += w2; }
+    const totalW = preW + segW, bx3 = W / 2 - totalW / 2, byy = 76;
+    ctx.fillStyle = 'rgba(8,13,20,0.78)';
+    ctx.fillRect(bx3 - 12, byy - 17, totalW + 24, 26);
+    ctx.strokeStyle = isBoss ? 'rgba(255,120,90,0.65)' : 'rgba(201,164,90,0.45)';
+    ctx.lineWidth = 1; ctx.strokeRect(bx3 - 12, byy - 17, totalW + 24, 26);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = isBoss ? '#ff9a7a' : '#c9a45a';
+    ctx.fillText(pre, bx3, byy);
+    let px3 = bx3 + preW;
+    for (const s of segs) {
+      ctx.fillStyle = ENEMIES[s.k].color;
+      ctx.beginPath(); ctx.arc(px3 + 4, byy - 4, 4, 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(10,14,20,0.8)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#c6d4e6';
+      ctx.fillText(ENEMIES[s.k].name + '×' + cnt[s.k], px3 + 12, byy);
+      px3 += s.w;
+    }
+  }
   drawOverlays();
 }
 function isFortPlaced(c, r) { return unitAt(c, r) !== undefined; }
@@ -1661,6 +1707,24 @@ function hoverTarget() {
   return null;
 }
 function shiftRed(hex) { return '#a85a4a'; }
+/* 军资面板（玩家侧资金出口，w8 起） */
+function renderFund() {
+  const fp = $('fundP'); if (!fp) return;
+  const show = game.state === 'play' && game.wave >= 8;
+  fp.style.display = show ? 'block' : 'none';
+  if (!show) return;
+  const rows = $('fundRows');
+  rows.innerHTML = '';
+  for (const k of Object.keys(FUNDS)) {
+    const f = FUNDS[k], cost = fundCost(k), ok = game.gold >= cost;
+    const b = document.createElement('button');
+    b.className = 'fundBtn' + (ok ? ' ok' : '');
+    b.innerHTML = '<b>' + f.name + '</b><i>' + f.desc + (f.n ? '（已有 ' + f.n + '）' : '') + '</i><em>' + cost + '◈</em>';
+    b.disabled = !ok;
+    b.addEventListener('click', () => { if (fundTry(k, 0)) syncHud(); });
+    rows.appendChild(b);
+  }
+}
 
 /* ============ HUD/DOM ============ */
 function syncHud() {
@@ -1668,6 +1732,7 @@ function syncHud() {
   $('hGold').textContent = game.gold;
   $('hWave').textContent = '第 ' + game.wave + ' / ' + (game.endless ? '∞' : TOTAL_WAVES) + ' 波';
   $('hPop').textContent = '⚔ 人口 ' + usedPop().toFixed(1) + '/' + capTotal();
+  renderFund();
   const bw = $('btnWave');
   if (game.state === 'play' && !game.waveActive && !game.boonMode) { bw.disabled = false; bw.textContent = game.wave === 0 ? '开始防守 ▶' : '下一波 ▶'; }
   else if (game.boonMode) { bw.disabled = true; bw.textContent = '选择祝福…'; }
@@ -1946,7 +2011,7 @@ function runSim(n) {
           const hasRanged = game.units.filter(u => !UNITS[u.type].block && u.type !== 'holy' && u.type !== 'drum').length;
           order = (game.gold > 160 || hasRanged < 2) ? cheap.concat(big) : cheap;
           order.sort((a, b) => ((QUOTA[b] || 2) - (cnt[b] || 0)) - ((QUOTA[a] || 2) - (cnt[a] || 0)) || costOf(a) - costOf(b));
-          if (game.wave >= 4 && !(cnt.cannon > 0) && game.gold >= 340 && usedPop() <= capTotal() - 3 && FORTL().some(fc => !unitAt(fc[0], fc[1]))) order = ['cannon'].concat(order.filter(t => t !== 'cannon'));
+          if (game.wave >= 3 && !(cnt.cannon > 0) && game.gold >= 260 && usedPop() <= capTotal() - 3 && FORTL().some(fc => !unitAt(fc[0], fc[1]))) order = ['cannon'].concat(order.filter(t => t !== 'cannon'));
           if (game.enemies.some(e2 => e2.def.physRes) && (cnt.mage || 0) < 2 && order.includes('mage')) order = ['mage'].concat(order.filter(t => t !== 'mage'));
           if (game.enemies.filter(e2 => e2.def.aura).length && (cnt.mage || 0) < 1 && order.includes('mage')) order = ['mage'].concat(order.filter(t => t !== 'mage'));
         } else order = avail.slice();
@@ -1985,7 +2050,7 @@ function runSim(n) {
             if (game.gold >= u.tier().up && upgradeUnit(u)) { upg = true; break; }
           }
         }
-        if (game.wave >= 8 && game.gold > 2600) fundTry(game.gold > 6000 ? 'pop' : 'dmg', 2500);
+        if (game.wave >= 8) { while (game.gold >= fundCost('dmg') + 2500 && fundTry('dmg', 0)) { } while (game.gold >= fundCost('pop') + 2000 && game.gold > 4200 && fundTry('pop', 0)) { } }
         game.waitT = (game.waitT || 0) + 1 / 60;
         const swordCost = Math.round(UNITS.sword.cost * (DIFFS[game.diff].cost || 1));
         const wallHave = game.units.filter(u => UNITS[u.type].block && !u.dead).length;
@@ -2194,6 +2259,7 @@ if (SIM_N > 0) {
 } else {
   boot();
   if (Q.get('book') === '1') showOv('ovBook');
+  if (Q.get('preview') === '1') { startRun('normal', +(Q.get('ch') || 0)); nextWave(); game.enemies.length = 0; game.spawnQueue.length = 0; game.waveActive = false; if (Q.get('fund') === '1') { game.wave = 9; game.gold = 2800; syncHud(); } }
   if (Q.get('shot')) {
     shotRun(Math.max(1, Math.min(15, +Q.get('shot') || 3)));
     document.title = 'SHOT ok w' + game.wave + ' en' + game.enemies.length + ' q' + game.spawnQueue.length + ' act' + (game.waveActive ? 1 : 0) + ' st' + game.state + ' pa' + (game.paused ? 1 : 0) + ' wT' + Math.round(game.waitT || 0) + ' bo' + !!game.boonMode;
